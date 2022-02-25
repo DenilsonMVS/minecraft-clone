@@ -6,8 +6,81 @@
 #include <GLFW/glfw3.h>
 
 #include "window.hpp"
-#include "vertex_buffer.hpp"
-#include "index_buffer.hpp"
+
+
+
+namespace gl {
+
+	template<typename T>
+	constexpr unsigned get_gl_enum();
+
+	template<>
+	constexpr unsigned get_gl_enum<char>() {
+		return GL_BYTE;
+	}
+
+	template<>
+	constexpr unsigned get_gl_enum<unsigned char>() {
+		return GL_UNSIGNED_BYTE;
+	}
+
+	template<>
+	constexpr unsigned get_gl_enum<short>() {
+		return GL_SHORT;
+	}
+
+	template<>
+	constexpr unsigned get_gl_enum<unsigned short>() {
+		return GL_UNSIGNED_SHORT;
+	}
+
+	template<>
+	constexpr unsigned get_gl_enum<int>() {
+		return GL_INT;
+	}
+
+	template<>
+	constexpr unsigned get_gl_enum<unsigned int>() {
+		return GL_UNSIGNED_INT;
+	}
+
+	template<>
+	constexpr unsigned get_gl_enum<float>() {
+		return GL_FLOAT;
+	}
+
+	template<>
+	constexpr unsigned get_gl_enum<double>() {
+		return GL_DOUBLE;
+	}
+
+
+	constexpr unsigned get_size(const unsigned type) {
+		switch(type) {
+		case GL_BYTE:
+		case GL_UNSIGNED_BYTE:
+			return 1;
+
+		case GL_SHORT:
+		case GL_UNSIGNED_SHORT:
+		case GL_HALF_FLOAT:
+			return 2;
+
+		case GL_INT:
+		case GL_UNSIGNED_INT:
+		case GL_FIXED:
+		case GL_FLOAT:
+			return 4;
+
+		case GL_DOUBLE:
+			return 8;
+
+		default:
+			assert(false);
+			return 0;
+		}
+	}
+}
 
 
 class Renderer {
@@ -19,16 +92,6 @@ public:
 	static void set_clear_color(const glm::vec3 &color);
 	static void poll_events();
 	static void clear(const unsigned mask);
-
-	template<typename T>
-	static void draw(const VertexBuffer<T> &vbo) {
-		glDrawArrays(GL_TRIANGLES, 0, vbo.get_count());
-	}
-	
-	template<typename T>
-	static void draw(const IndexBuffer<T> &ibo) {
-		glDrawElements(GL_TRIANGLES, ibo.get_count(), ibo.get_type(), 0);
-	}
 
 private:
 	struct RendererConstructor {
