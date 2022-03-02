@@ -48,7 +48,7 @@ int main() {
 
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close()) {
-		Renderer::clear(GL_COLOR_BUFFER_BIT);
+		Renderer::clear(gl::COLOR_BUFFER_BIT);
 
 		superbuffer.draw();
 

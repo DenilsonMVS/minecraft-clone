@@ -180,7 +180,7 @@ void Renderer::poll_events() {
 	glfwPollEvents();
 }
 
-void Renderer::clear(const unsigned mask) {
+void Renderer::clear(const gl::BitField mask) {
     glClear(mask);
 }
 

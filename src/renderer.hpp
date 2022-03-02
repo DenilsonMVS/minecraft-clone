@@ -92,6 +92,12 @@ namespace gl {
 		DYNAMIC_READ = GL_DYNAMIC_READ,
 		DYNAMIC_COPY = GL_DYNAMIC_COPY,
 	};
+
+	enum BitField : unsigned {
+		COLOR_BUFFER_BIT = GL_COLOR_BUFFER_BIT,
+		DEPTH_BUFFER_BIT = GL_DEPTH_BUFFER_BIT,
+		STENCIL_BUFFER_BIT = GL_STENCIL_BUFFER_BIT
+	};
 }
 
 
@@ -103,7 +109,7 @@ public:
 	static void set_clear_color(const float r, const float g, const float b);
 	static void set_clear_color(const glm::vec3 &color);
 	static void poll_events();
-	static void clear(const unsigned mask);
+	static void clear(const gl::BitField mask);
 
 private:
 	struct RendererConstructor {
