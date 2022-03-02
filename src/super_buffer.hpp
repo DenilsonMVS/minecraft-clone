@@ -33,9 +33,9 @@ public:
 
 	SuperBuffer(
 		const std::span<const INDEX_TYPE> &indices,
-		const unsigned index_buffer_mode,
+		const gl::Usage index_buffer_mode,
 		const MemoryHolder &vertex,
-		const unsigned vertex_buffer_mode,
+		const gl::Usage vertex_buffer_mode,
 		const std::span<const LayoutElement> &layout,
 		const unsigned binding_point) :
 		binding_point(binding_point),
@@ -46,11 +46,11 @@ public:
 
 		glCreateBuffers(2, this->buffers);
 		
-		glNamedBufferData(this->buffers[INDEX_BUFFER], indices.size() * sizeof(INDEX_TYPE), indices.data(), index_buffer_mode);
-		glVertexArrayElementBuffer(this->vao, this->buffers[INDEX_BUFFER]);
+		glNamedBufferData(this->ibo, size_bytes(), indices.data(), index_buffer_mode);
+		glVertexArrayElementBuffer(this->vao, this->ibo);
 
-		glNamedBufferData(this->buffers[VERTEX_BUFFER], vertex.size, vertex.data, vertex_buffer_mode);
-		glVertexArrayVertexBuffer(this->vao, this->binding_point, this->buffers[VERTEX_BUFFER], 0, sizeof(float) * 4);
+		glNamedBufferData(this->vbo, vertex.size, vertex.data, vertex_buffer_mode);
+		glVertexArrayVertexBuffer(this->vao, this->binding_point, this->vbo, 0, sizeof(float) * 4);
 		
 		unsigned offset = 0;
 		for(unsigned i = 0; i < layout.size(); i++) {
@@ -65,25 +65,27 @@ public:
 	}
 
 	SuperBuffer(SuperBuffer &&other) :
-		buffers{other.buffers[INDEX_BUFFER], other.buffers[VERTEX_BUFFER]}, 
+		ibo(other.ibo),
+		vbo(other.vbo),
 		vao(other.vao), 
 		binding_point(other.binding_point), 
 		count(other.count)
 	{
-		other.buffers[INDEX_BUFFER] = 0;
-		other.buffers[VERTEX_BUFFER] = 0;
+		other.ibo = 0;
+		other.vbo = 0;
 		other.vao = 0;
 	}
 
 	SuperBuffer &operator=(SuperBuffer &&other) {
 		if(this != &other) {
-			this->buffers = other.buffers;
+			this->ibo = other.ibo;
+			this->vbo = other.vbo;
 			this->vao = other.vao;
 			this->binding_point = other.binding_point;
 			this->count = other.count;
 
-			other.buffers[INDEX_BUFFER] = 0;
-			other.buffers[VERTEX_BUFFER] = 0;
+			other.ibo = 0;
+			other.vbo = 0;
 			other.vao = 0;
 		}
 
@@ -99,6 +101,33 @@ public:
 	}
 
 
+	void assign_data(const MemoryHolder &vertex, const gl::Usage vbo_mode = gl::DYNAMIC_DRAW) const {
+		glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
+
+		int buffer_size;
+		glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &buffer_size);
+
+		if(vertex.size > buffer_size)
+			glBufferData(GL_ARRAY_BUFFER, vertex.size, vertex.data, vbo_mode);
+		else
+			glBufferSubData(GL_ARRAY_BUFFER, 0, vertex.size, vertex.data);
+	}
+
+	void assign_data(const std::span<const INDEX_TYPE> &indices, const gl::Usage ibo_mode = gl::DYNAMIC_DRAW) const {
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo);
+
+		int buffer_size;
+		glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &buffer_size);
+
+		if(indices.size_bytes() > buffer_size)
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size_bytes(), indices.data, ibo_mode);
+		else
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size_bytes(), indices.data());
+		
+		this->count = indices.size();
+	}
+
+
 	void draw() const {
 		glBindVertexArray(this->vao);
 		glDrawElements(GL_TRIANGLES, this->count, gl::get_gl_enum<INDEX_TYPE>(), 0);
@@ -110,7 +139,13 @@ public:
 	}
 
 private:
-	unsigned buffers[NUM_BUFFERS];
+	union {
+		unsigned buffers[NUM_BUFFERS];
+		struct {
+			unsigned ibo;
+			unsigned vbo;
+		};
+	};
 	unsigned vao;
 	unsigned binding_point;
 	unsigned count;

@@ -29,8 +29,8 @@ int main() {
 	};
 
 	auto superbuffer = SuperBuffer<unsigned char>(
-		indices, GL_STATIC_DRAW,
-		MemoryHolder(vertices), GL_STATIC_DRAW,
+		indices, gl::STATIC_DRAW,
+		MemoryHolder(vertices), gl::STATIC_DRAW,
 		layout, 0);
 	
 
