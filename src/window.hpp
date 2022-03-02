@@ -5,12 +5,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "utils.hpp"
-
 #include <glm/glm.hpp>
 
+#include "utils.hpp"
+#include "gl.hpp"
 
-class Renderer;
 
 class Window {
 public:
@@ -21,10 +20,12 @@ public:
 	void swap_buffers() const;
 
 	glm::ivec2 get_dimensions() const;
+	glm::dvec2 get_mouse_pos() const;
+	gl::KeyStatus get_key_status(const gl::Key key) const;
 
 private:
-	Window(const int width, const int height, const char * const title);
-	Window(const int width, const int height, const char * const title, const Window &share);
+	Window(const glm::ivec2 dimensions, const char * const title);
+	Window(const glm::ivec2 dimensions, const char * const title, const Window &share);
 
 	GLFWwindow *w;
 };

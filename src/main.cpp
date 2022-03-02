@@ -8,7 +8,7 @@
 
 int main() {
 
-	auto window = Renderer::create_window(800, 600, "Base");
+	auto window = Renderer::create_window({800, 600}, "Base");
 	
 
 	const uint8_t indices[] = {

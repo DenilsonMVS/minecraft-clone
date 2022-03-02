@@ -46,7 +46,7 @@ public:
 
 		glCreateBuffers(2, this->buffers);
 		
-		glNamedBufferData(this->ibo, size_bytes(), indices.data(), index_buffer_mode);
+		glNamedBufferData(this->ibo, indices.size_bytes(), indices.data(), index_buffer_mode);
 		glVertexArrayElementBuffer(this->vao, this->ibo);
 
 		glNamedBufferData(this->vbo, vertex.size, vertex.data, vertex_buffer_mode);
@@ -130,12 +130,12 @@ public:
 
 	void draw() const {
 		glBindVertexArray(this->vao);
-		glDrawElements(GL_TRIANGLES, this->count, gl::get_gl_enum<INDEX_TYPE>(), 0);
+		glDrawElements(GL_TRIANGLES, this->count, gl::get_enum<INDEX_TYPE>(), 0);
 	}
 
 	void draw(const int count) const {
 		glBindVertexArray(this->vao);
-		glDrawElements(GL_TRIANGLES, count, gl::get_gl_enum<INDEX_TYPE>(), 0);
+		glDrawElements(GL_TRIANGLES, count, gl::get_enum<INDEX_TYPE>(), 0);
 	}
 
 private:

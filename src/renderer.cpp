@@ -133,8 +133,8 @@ Renderer::RendererConstructor::~RendererConstructor() {
 	glfwTerminate();
 }
 
-Window Renderer::create_window(const int width, const int height, const char * const title) {
-	auto window = Window(width, height, title);
+Window Renderer::create_window(const glm::ivec2 dimensions, const char * const title) {
+	auto window = Window(dimensions, title);
 	det::check(window.w != nullptr, "Unable to create window.\n");
 	glfwMakeContextCurrent(window.w);
 	
@@ -159,8 +159,8 @@ Window Renderer::create_window(const int width, const int height, const char * c
 	return window;
 }
 
-Window Renderer::create_window(const int width, const int height, const char * const title, const Window &share) {
-	auto window = Window(width, height, title, share);
+Window Renderer::create_window(const glm::ivec2 dimensions, const char * const title, const Window &share) {
+	auto window = Window(dimensions, title, share);
 	det::check(window.w != nullptr, "Unable to create window.\n");
 	
 	glfwSetFramebufferSizeCallback(window.w, framebuffer_size_callback);
