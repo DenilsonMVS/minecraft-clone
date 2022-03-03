@@ -241,10 +241,16 @@ namespace gl {
 		MENU =              348,
 	};
 
-	enum KeyStatus : int {
+	enum class KeyStatus : int {
 		PRESS,
 		RELEASE,
 		REPEAT
+	};
+
+	enum class CursorMode : int {
+		NORMAL = GLFW_CURSOR_NORMAL,
+		HIDDEN = GLFW_CURSOR_HIDDEN,
+		DISABLED = GLFW_CURSOR_DISABLED
 	};
 }
 

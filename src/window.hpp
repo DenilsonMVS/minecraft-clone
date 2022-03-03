@@ -18,10 +18,13 @@ public:
 	void bind() const;
 	bool should_close() const;
 	void swap_buffers() const;
+	void destroy() const;
 
 	glm::ivec2 get_dimensions() const;
 	glm::dvec2 get_mouse_pos() const;
 	gl::KeyStatus get_key_status(const gl::Key key) const;
+
+	void set_cursor_mode(const gl::CursorMode mode) const;
 
 private:
 	Window(const glm::ivec2 dimensions, const char * const title);

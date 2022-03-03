@@ -20,6 +20,10 @@ void Window::swap_buffers() const {
 	glfwSwapBuffers(this->w);
 }
 
+void Window::destroy() const {
+	glfwDestroyWindow(this->w);
+}
+
 glm::ivec2 Window::get_dimensions() const {
 	glm::ivec2 dimensions;
 	glfwGetWindowSize(this->w, &dimensions.x, &dimensions.y);
@@ -34,4 +38,8 @@ glm::dvec2 Window::get_mouse_pos() const {
 
 gl::KeyStatus Window::get_key_status(const gl::Key key) const {
 	return (gl::KeyStatus) glfwGetKey(this->w, (int) key);
+}
+
+void Window::set_cursor_mode(const gl::CursorMode mode) const {
+	glfwSetInputMode(this->w, GLFW_CURSOR, (int) mode);
 }
