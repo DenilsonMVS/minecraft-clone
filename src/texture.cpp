@@ -31,6 +31,22 @@ Texture::Texture(const char * const path, const Texture::Filtering filtering, co
 	stbi_image_free(buffer);
 }
 
+Texture::Texture(const unsigned char *image, const int width, const int height, const int channels, const Filtering filtering, const Wrapping wrapping) {
+	glGenTextures(1, &this->id);
+
+	glBindTexture(GL_TEXTURE_2D, this->id);
+	if(channels == 3)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	else
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filtering);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filtering);
+}
+
 Texture::Texture(Texture &&other) :
 	id(other.id)
 {

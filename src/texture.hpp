@@ -20,8 +20,9 @@ public:
 		CLAMP_TO_BORDER = GL_CLAMP_TO_BORDER
 	};
 
-
+	Texture() = default;
 	Texture(const char * const path, const Filtering filtering = LINEAR, const Wrapping wrapping = CLAMP_TO_BORDER);
+	Texture(const unsigned char *image, const int width, const int height, const int channels, const Filtering filtering = LINEAR, const Wrapping wrapping = CLAMP_TO_BORDER);
 
 	Texture(Texture &&other);
 	Texture &operator=(Texture &&other);
