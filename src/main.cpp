@@ -9,7 +9,7 @@
 int main() {
 
 	auto window = Renderer::create_window({800, 600}, "Base");
-	window.set_cursor_mode(gl::CursorMode::HIDDEN);
+	window.set_cursor_mode(gl::CursorMode::DISABLED);
 
 
 	const uint8_t indices[] = {

@@ -19,6 +19,9 @@ public:
 	static void poll_events();
 	static void clear(const gl::BitField mask);
 
+	static void use_wireframe();
+	static void use_filling();
+
 private:
 	struct RendererConstructor {
 		RendererConstructor();

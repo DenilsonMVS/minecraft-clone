@@ -20,8 +20,8 @@ void Window::swap_buffers() const {
 	glfwSwapBuffers(this->w);
 }
 
-void Window::destroy() const {
-	glfwDestroyWindow(this->w);
+void Window::mark_to_close() const {
+	glfwSetWindowShouldClose(this->w, true);
 }
 
 glm::ivec2 Window::get_dimensions() const {

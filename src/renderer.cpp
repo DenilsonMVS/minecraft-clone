@@ -184,6 +184,14 @@ void Renderer::clear(const gl::BitField mask) {
     glClear(mask);
 }
 
+void Renderer::use_wireframe() {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+}
+
+void Renderer::use_filling() {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
 
 
 Renderer::RendererConstructor Renderer::instance;
