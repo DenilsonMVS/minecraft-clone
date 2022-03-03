@@ -9,6 +9,7 @@
 int main() {
 
 	auto window = Renderer::create_window({800, 600}, "Base");
+	window.set_cursor_mode(gl::CursorMode::HIDDEN);
 
 
 	const uint8_t indices[] = {
@@ -47,7 +48,7 @@ int main() {
 
 
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
-	while(!window.should_close()) {
+	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
 		Renderer::clear(gl::COLOR_BUFFER_BIT);
 
 		superbuffer.draw();

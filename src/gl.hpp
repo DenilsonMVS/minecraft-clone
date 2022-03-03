@@ -242,8 +242,8 @@ namespace gl {
 	};
 
 	enum class KeyStatus : int {
-		PRESS,
 		RELEASE,
+		PRESS,
 		REPEAT
 	};
 
