@@ -22,6 +22,13 @@ public:
 	static void use_wireframe();
 	static void use_filling();
 
+	static void enable(const gl::Capability cap);
+	static void enable(const gl::Capability cap, const int index);
+	static void disable(const gl::Capability cap);
+	static void disable(const gl::Capability cap, const int index);
+	static bool is_enabled(const gl::Capability cap);
+	static bool is_enabled(const gl::Capability cap, const int index);
+
 	static double get_time();
 
 private:

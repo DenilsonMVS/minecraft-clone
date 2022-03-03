@@ -46,10 +46,10 @@ public:
 
 		glCreateBuffers(2, this->buffers);
 		
-		glNamedBufferData(this->ibo, indices.size_bytes(), indices.data(), index_buffer_mode);
+		glNamedBufferData(this->ibo, indices.size_bytes(), indices.data(), (unsigned) index_buffer_mode);
 		glVertexArrayElementBuffer(this->vao, this->ibo);
 
-		glNamedBufferData(this->vbo, vertex.size, vertex.data, vertex_buffer_mode);
+		glNamedBufferData(this->vbo, vertex.size, vertex.data, (unsigned) vertex_buffer_mode);
 		glVertexArrayVertexBuffer(this->vao, this->binding_point, this->vbo, 0, sizeof(float) * 4);
 		
 		unsigned offset = 0;
@@ -101,19 +101,19 @@ public:
 	}
 
 
-	void assign_data(const MemoryHolder &vertex, const gl::Usage vbo_mode = gl::DYNAMIC_DRAW) const {
+	void assign_data(const MemoryHolder &vertex, const gl::Usage vbo_mode = gl::Usage::DYNAMIC_DRAW) const {
 		glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
 		int buffer_size;
 		glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &buffer_size);
 
 		if(vertex.size > buffer_size)
-			glBufferData(GL_ARRAY_BUFFER, vertex.size, vertex.data, vbo_mode);
+			glBufferData(GL_ARRAY_BUFFER, vertex.size, vertex.data, (unsigned) vbo_mode);
 		else
 			glBufferSubData(GL_ARRAY_BUFFER, 0, vertex.size, vertex.data);
 	}
 
-	void assign_data(const std::span<const INDEX_TYPE> &indices, const gl::Usage ibo_mode = gl::DYNAMIC_DRAW) const {
+	void assign_data(const std::span<const INDEX_TYPE> &indices, const gl::Usage ibo_mode = gl::Usage::DYNAMIC_DRAW) const {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo);
 
 		int buffer_size;
@@ -130,7 +130,7 @@ public:
 
 	void draw() const {
 		glBindVertexArray(this->vao);
-		glDrawElements(GL_TRIANGLES, this->count, gl::get_enum<INDEX_TYPE>(), 0);
+		glDrawElements(GL_TRIANGLES, this->count, (unsigned) gl::get_enum<INDEX_TYPE>(), 0);
 	}
 
 	void draw(const int count) const {

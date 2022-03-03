@@ -181,7 +181,7 @@ void Renderer::poll_events() {
 }
 
 void Renderer::clear(const gl::BitField mask) {
-    glClear(mask);
+    glClear((unsigned) mask);
 }
 
 void Renderer::use_wireframe() {
@@ -190,6 +190,30 @@ void Renderer::use_wireframe() {
 
 void Renderer::use_filling() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void enable(const gl::Capability cap) {
+    glEnable((unsigned) cap);
+}
+
+void enable(const gl::Capability cap, const int index) {
+    glEnablei((unsigned) cap, index);
+}
+
+void disable(const gl::Capability cap) {
+    glDisable((unsigned) cap);
+}
+
+void disable(const gl::Capability cap, const int index) {
+    glDisablei((unsigned) cap, index);
+}
+
+bool is_enabled(const gl::Capability cap) {
+    return glIsEnabled((unsigned) cap);
+}
+
+bool is_enabled(const gl::Capability cap, const int index) {
+    return glIsEnabledi((unsigned) cap, index);
 }
 
 double Renderer::get_time() {

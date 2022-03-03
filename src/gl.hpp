@@ -10,7 +10,7 @@
 
 namespace gl {
 
-	enum Type : unsigned {
+	enum class Type : unsigned {
 		BYTE = GL_BYTE,
 		CHAR = GL_BYTE,
 		INT8 = GL_BYTE,
@@ -34,42 +34,42 @@ namespace gl {
 
 	template<>
 	constexpr Type get_enum<char>() {
-		return BYTE;
+		return Type::BYTE;
 	}
 
 	template<>
 	constexpr Type get_enum<unsigned char>() {
-		return UNSIGNED_CHAR;
+		return Type::UNSIGNED_CHAR;
 	}
 
 	template<>
 	constexpr Type get_enum<short>() {
-		return SHORT;
+		return Type::SHORT;
 	}
 
 	template<>
 	constexpr Type get_enum<unsigned short>() {
-		return UNSIGNED_SHORT;
+		return Type::UNSIGNED_SHORT;
 	}
 
 	template<>
 	constexpr Type get_enum<int>() {
-		return INT;
+		return Type::INT;
 	}
 
 	template<>
 	constexpr Type get_enum<unsigned int>() {
-		return UNSIGNED_INT;
+		return Type::UNSIGNED_INT;
 	}
 
 	template<>
 	constexpr Type get_enum<float>() {
-		return FLOAT;
+		return Type::FLOAT;
 	}
 
 	template<>
 	constexpr Type get_enum<double>() {
-		return DOUBLE;
+		return Type::DOUBLE;
 	}
 
 
@@ -99,7 +99,7 @@ namespace gl {
 		}
 	}
 
-	enum Usage : unsigned {
+	enum class Usage : unsigned {
 		STREAM_DRAW = GL_STREAM_DRAW,
 		STREAM_READ = GL_STREAM_READ,
 		STREAM_COPY = GL_STREAM_COPY,
@@ -111,10 +111,10 @@ namespace gl {
 		DYNAMIC_COPY = GL_DYNAMIC_COPY,
 	};
 
-	enum BitField : unsigned {
-		COLOR_BUFFER_BIT = GL_COLOR_BUFFER_BIT,
-		DEPTH_BUFFER_BIT = GL_DEPTH_BUFFER_BIT,
-		STENCIL_BUFFER_BIT = GL_STENCIL_BUFFER_BIT
+	enum class BitField : unsigned {
+		COLOR_BUFFER = GL_COLOR_BUFFER_BIT,
+		DEPTH_BUFFER = GL_DEPTH_BUFFER_BIT,
+		STENCIL_BUFFER = GL_STENCIL_BUFFER_BIT
 	};
 
 	enum class Key : int {
@@ -251,6 +251,36 @@ namespace gl {
 		NORMAL = GLFW_CURSOR_NORMAL,
 		HIDDEN = GLFW_CURSOR_HIDDEN,
 		DISABLED = GLFW_CURSOR_DISABLED
+	};
+
+	enum class Capability : unsigned {
+		BLEND = GL_BLEND,
+		COLOR_LOGIC_OP = GL_COLOR_LOGIC_OP,
+		CULL_FACE = GL_CULL_FACE,
+		DEBUG_OUTPT = GL_DEBUG_OUTPUT,
+		DEBUG_OUTPUT_SYNCHRONOUS = GL_DEBUG_OUTPUT_SYNCHRONOUS,
+		DEPTH_CLAMP = GL_DEPTH_CLAMP,
+		DEPTH_TEST = GL_DEPTH_TEST,
+		DITHER = GL_DITHER,
+		FRAMEBUFFER_SRGB = GL_FRAMEBUFFER_SRGB,
+		LINE_SMOOTH = GL_LINE_SMOOTH,
+		MULTISAMPLE = GL_MULTISAMPLE,
+		POLYGON_OFFSET_FILL = GL_POLYGON_OFFSET_FILL,
+		POLYGON_OFFSET_LINE = GL_POLYGON_OFFSET_LINE,
+		POLYGON_OFFSET_POINT = GL_POLYGON_OFFSET_POINT,
+		POLYGON_SMOOTH = GL_POLYGON_SMOOTH,
+		PRIMITIVE_RESTART = GL_PRIMITIVE_RESTART,
+		PRIMITIVE_RESTART_FIXED_INDEX = GL_PRIMITIVE_RESTART_FIXED_INDEX,
+		RASTERIZER_DISCARD = GL_RASTERIZER_DISCARD,
+		SAMPLE_ALPHA_TO_COVERAGE = GL_SAMPLE_ALPHA_TO_COVERAGE,
+		SAMPLE_ALPHA_TO_ONE = GL_SAMPLE_ALPHA_TO_ONE,
+		SAMPLE_COVERAGE = GL_SAMPLE_COVERAGE,
+		SAMPLE_SHADING = GL_SAMPLE_SHADING,
+		SAMPLE_MASK = GL_SAMPLE_MASK,
+		SCISSOR_TEST = GL_SCISSOR_TEST,
+		STENCIL_TEST = GL_STENCIL_TEST,
+		TEXTURE_CUBE_MAP_SEAMLESS = GL_TEXTURE_CUBE_MAP_SEAMLESS,
+		PROGRAM_POINT_SIZE = GL_PROGRAM_POINT_SIZE
 	};
 }
 
