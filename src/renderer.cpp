@@ -145,8 +145,8 @@ Window Renderer::create_window(const glm::ivec2 dimensions, const char * const t
 	
 	#ifndef NDEBUG
 
-	glEnable(GL_DEBUG_OUTPUT);
-	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glEnable((unsigned) gl::Capability::DEBUG_OUTPT);
+	glEnable((unsigned) gl::Capability::DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(glDebugOutput, nullptr);
 
 	std::cout << "GL Vendor: " << glGetString(GL_RENDERER) << '\n';
