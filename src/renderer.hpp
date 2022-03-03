@@ -22,6 +22,8 @@ public:
 	static void use_wireframe();
 	static void use_filling();
 
+	static double get_time();
+
 private:
 	struct RendererConstructor {
 		RendererConstructor();

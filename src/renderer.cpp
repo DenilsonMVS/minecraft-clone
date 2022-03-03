@@ -192,6 +192,10 @@ void Renderer::use_filling() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
+double Renderer::get_time() {
+    return glfwGetTime();
+}
+
 
 
 Renderer::RendererConstructor Renderer::instance;
