@@ -18,7 +18,7 @@ struct BlockData {
 };
 
 constexpr BlockData blocks[] = {
-	{true, {BlockFaceId::AIR, BlockFaceId::AIR, BlockFaceId::AIR, BlockFaceId::AIR, BlockFaceId::AIR, BlockFaceId::AIR}},
+	{true, {BlockFaceId::NO_FACE, BlockFaceId::NO_FACE, BlockFaceId::NO_FACE, BlockFaceId::NO_FACE, BlockFaceId::NO_FACE, BlockFaceId::NO_FACE}},
 	{false, {BlockFaceId::DIRT, BlockFaceId::DIRT, BlockFaceId::DIRT, BlockFaceId::DIRT, BlockFaceId::DIRT, BlockFaceId::DIRT}},
 	{false, {BlockFaceId::GRASS_SIDE, BlockFaceId::GRASS_SIDE, BlockFaceId::GRASS_SIDE, BlockFaceId::GRASS_SIDE, BlockFaceId::GRASS_TOP, BlockFaceId::DIRT}}
 };

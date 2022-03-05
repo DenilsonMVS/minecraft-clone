@@ -9,23 +9,17 @@
 class BlockTextureAtlas {
 public:
 	static constexpr int resolution = 16;
-	static constexpr int width = 1 + ((int) BlockFaceId::NUM_FACES - 1) * resolution;
+	static constexpr int width = (int) BlockFaceId::NUM_FACES * resolution;
 	static constexpr int height = resolution;
 
 	BlockTextureAtlas();
 
 	static constexpr TextureCoords get_texture_coords_of_face(const BlockFaceId face_id) {
-		switch(face_id) {
-		case BlockFaceId::AIR:
-			return {0, 0, 0, 0};
-		
-		default:
-			return {
-				(float) ((int) face_id - 1) * BlockTextureAtlas::resolution / BlockTextureAtlas::width,
-				0.0f,
-				(float) (int) face_id * BlockTextureAtlas::resolution / BlockTextureAtlas::width,
-				1.0f};
-		}
+		return {
+			(float) ((int) face_id) * BlockTextureAtlas::resolution / BlockTextureAtlas::width,
+			0.0f,
+			(float) (((int) face_id) + 1) * BlockTextureAtlas::resolution / BlockTextureAtlas::width,
+			1.0f};
 	}
 	
 
