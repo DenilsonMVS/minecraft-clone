@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <iomanip>
 
 #include "renderer.hpp"
 #include "program.hpp"
@@ -7,6 +8,8 @@
 #include "utils.hpp"
 #include "super_buffer.hpp"
 #include "camera.hpp"
+
+#include "block.hpp"
 
 
 struct Player {
@@ -49,8 +52,15 @@ void Player::update(const float d_t, const Window &window) {
 
 int main() {
 
+	#ifndef NDEBUG
+	std::cout << std::fixed << std::setprecision(2);
+	#endif
+
+
 	auto window = Renderer::create_window({800, 600}, "Base");
 	window.set_cursor_mode(gl::CursorMode::DISABLED);
+
+	auto atlas = BlockTextureAtlas();
 
 	auto player = Player(window);
 	player.camera.position = {0, 0, -1};
@@ -64,11 +74,15 @@ int main() {
 		0, 2, 3
 	};
 
+	const auto texture_positions = get_coords(BlockId::DIRT, FaceId::NORTH);
+	std::cout << texture_positions.x_min << ' ' << texture_positions.y_min << '\n';
+	std::cout << texture_positions.x_max << ' ' << texture_positions.y_max << '\n';
+
 	const float vertices[] = {
-		-0.5f, -0.5f, 0.0f, 0.0f,
-		-0.5f,  0.5f, 0.0f, 1.0f,
-		 0.5f,  0.5f, 1.0f, 1.0f,
-		 0.5f, -0.5f, 1.0f, 0.0f
+		-0.5f, -0.5f, texture_positions.x_min, texture_positions.y_min,
+		-0.5f,  0.5f, texture_positions.x_min, texture_positions.y_max,
+		 0.5f,  0.5f, texture_positions.x_max, texture_positions.y_max,
+		 0.5f, -0.5f, texture_positions.x_max, texture_positions.y_min
 	};
 
 	const LayoutElement layout[] = {
@@ -81,9 +95,6 @@ int main() {
 		MemoryHolder(vertices), gl::Usage::STATIC_DRAW,
 		layout, 0);
 	
-
-	const auto texture = Texture("resources/images/dirt.png", Texture::NEAREST);
-
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
 		Shader("resources/shaders/main.frag")
@@ -110,7 +121,7 @@ int main() {
 		player.update(d_t, window);
 
 		#ifndef NDEBUG
-		std::cout << player.camera.position.x << ' ' << player.camera.position.y << player.camera.position.z << '\n';
+		std::cout << player.camera.position.x << ' ' << player.camera.position.y << ' ' << player.camera.position.z << '\n';
 		#endif
 
 		u_mvp.set(player.camera.get_view_projection(window.get_dimensions(), 90));
