@@ -4,7 +4,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#ifndef NDEBUG
 #include <iostream>
+#endif
 
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"

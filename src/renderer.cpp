@@ -2,7 +2,10 @@
 #include "renderer.hpp"
 
 #include "utils.hpp"
+
+#ifndef NDEBUG
 #include <iostream>
+#endif
 
 
 static void framebuffer_size_callback(GLFWwindow * const window, const int width, const int height) {
@@ -192,27 +195,27 @@ void Renderer::use_filling() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void enable(const gl::Capability cap) {
+void Renderer::enable(const gl::Capability cap) {
     glEnable((unsigned) cap);
 }
 
-void enable(const gl::Capability cap, const int index) {
+void Renderer::enable(const gl::Capability cap, const int index) {
     glEnablei((unsigned) cap, index);
 }
 
-void disable(const gl::Capability cap) {
+void Renderer::disable(const gl::Capability cap) {
     glDisable((unsigned) cap);
 }
 
-void disable(const gl::Capability cap, const int index) {
+void Renderer::disable(const gl::Capability cap, const int index) {
     glDisablei((unsigned) cap, index);
 }
 
-bool is_enabled(const gl::Capability cap) {
+bool Renderer::is_enabled(const gl::Capability cap) {
     return glIsEnabled((unsigned) cap);
 }
 
-bool is_enabled(const gl::Capability cap, const int index) {
+bool Renderer::is_enabled(const gl::Capability cap, const int index) {
     return glIsEnabledi((unsigned) cap, index);
 }
 

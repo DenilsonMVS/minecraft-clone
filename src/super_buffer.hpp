@@ -3,6 +3,7 @@
 #define SUPER_BUFFER_HPP
 
 #include <glad/glad.h>
+#include <vector>
 
 
 struct MemoryHolder {
@@ -10,6 +11,11 @@ struct MemoryHolder {
 	MemoryHolder(T (&data)[N]) :
 		data((void *) data),
 		size(N * sizeof(T)) {}
+
+	template<typename T>
+	MemoryHolder(std::vector<T> &data) :
+		data(data.data()),
+		size(data.size() * sizeof(T)) {}
 
 	void *data;
 	size_t size;
@@ -49,12 +55,16 @@ public:
 		glNamedBufferData(this->ibo, indices.size_bytes(), indices.data(), (unsigned) index_buffer_mode);
 		glVertexArrayElementBuffer(this->vao, this->ibo);
 
+		unsigned vertex_size = 0;
+		for(const auto &element : layout)
+			vertex_size += element.count * gl::get_size(element.type);
+		
 		glNamedBufferData(this->vbo, vertex.size, vertex.data, (unsigned) vertex_buffer_mode);
-		glVertexArrayVertexBuffer(this->vao, this->binding_point, this->vbo, 0, sizeof(float) * 4);
+		glVertexArrayVertexBuffer(this->vao, this->binding_point, this->vbo, 0, vertex_size);
 		
 		unsigned offset = 0;
 		for(unsigned i = 0; i < layout.size(); i++) {
-			const auto element = layout[i];
+			const auto &element = layout[i];
 
 			glVertexArrayAttribFormat(this->vao, i, element.count, element.type, element.normalized, offset);
 			glVertexArrayAttribBinding(this->vao, i, this->binding_point);
@@ -135,7 +145,7 @@ public:
 
 	void draw(const int count) const {
 		glBindVertexArray(this->vao);
-		glDrawElements(GL_TRIANGLES, count, gl::get_enum<INDEX_TYPE>(), 0);
+		glDrawElements(GL_TRIANGLES, count, (unsigned) gl::get_enum<INDEX_TYPE>(), 0);
 	}
 
 private:

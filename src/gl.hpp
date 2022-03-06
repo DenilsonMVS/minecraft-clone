@@ -117,6 +117,9 @@ namespace gl {
 		STENCIL_BUFFER = GL_STENCIL_BUFFER_BIT
 	};
 
+	BitField operator|(const BitField f1, const BitField f2);
+	
+
 	enum class Key : int {
 		UNKNOWN =           -1,
 		SPACE =             32,

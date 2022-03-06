@@ -11,7 +11,7 @@ struct TextureCoords {
 
 enum class FaceId : unsigned char {
 	NORTH,
-	SHOUTH,
+	SOUTH,
 	EAST,
 	WEST,
 	TOP,

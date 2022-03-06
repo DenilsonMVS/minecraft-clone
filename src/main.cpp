@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <vector>
 
 #include "renderer.hpp"
 #include "program.hpp"
@@ -49,9 +50,57 @@ void Player::update(const float d_t, const Window &window) {
 }
 
 
+struct Vertex {
+	glm::vec3 position;
+	glm::vec2 text_coord;
+};
+
+static void build_block_face(
+	const glm::ivec3 &position,
+	BlockId block,
+	const FaceId face,
+	std::vector<Vertex> &vertices,
+	std::vector<unsigned> &indices)
+{
+	constexpr int num_vertices_per_face = 4;
+	static const glm::ivec3 face_positions[(unsigned char) FaceId::NUM_FACES][num_vertices_per_face] = {
+		{{1, 0, 0}, {1, 1, 0}, {0, 0, 0}, {0, 1, 0}},
+		{{0, 0, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 1}},
+		{{1, 0, 1}, {1, 1, 1}, {1, 0, 0}, {1, 1, 0}},
+		{{0, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 1, 1}},
+		{{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {1, 1, 1}},
+		{{0, 0, 0}, {0, 0, 1}, {1, 0, 0}, {1, 0, 1}}
+	};
+
+	const auto &text_position = get_coords(block, face);
+	const glm::vec2 vbo_text_positions[] = {
+		{text_position.x_min, text_position.y_max},
+		{text_position.x_min, text_position.y_min},
+		{text_position.x_max, text_position.y_max},
+		{text_position.x_max, text_position.y_min}
+	};
+
+	
+	for(int i = 0; i < num_vertices_per_face; i++) {
+		const Vertex vertex = {
+			position + face_positions[(unsigned char) face][i],
+			vbo_text_positions[i]};
+		vertices.push_back(vertex);
+	}
+
+	
+	static const unsigned indices_base[] = {
+		2, 1, 0,
+		2, 3, 1
+	};
+	const unsigned last_index = indices.size() / (sizeof(indices_base) / sizeof(indices_base[0])) * 4;
+	for(const auto &index : indices_base)
+		indices.push_back(last_index + index);
+}
+
 
 int main() {
-
+	
 	#ifndef NDEBUG
 	std::cout << std::fixed << std::setprecision(2);
 	#endif
@@ -59,6 +108,10 @@ int main() {
 
 	auto window = Renderer::create_window({800, 600}, "Base");
 	window.set_cursor_mode(gl::CursorMode::DISABLED);
+
+	Renderer::enable(gl::Capability::CULL_FACE);
+	Renderer::enable(gl::Capability::DEPTH_TEST);
+
 
 	auto atlas = BlockTextureAtlas();
 
@@ -69,30 +122,25 @@ int main() {
 	player.camera.sensitivity = 3;
 
 
-	const uint8_t indices[] = {
-		0, 1, 2,
-		0, 2, 3
-	};
 
-	const auto texture_positions = get_coords(BlockId::DIRT, FaceId::NORTH);
-	std::cout << texture_positions.x_min << ' ' << texture_positions.y_min << '\n';
-	std::cout << texture_positions.x_max << ' ' << texture_positions.y_max << '\n';
+	std::vector<unsigned> indices;
+	std::vector<Vertex> vertices;
 
-	const float vertices[] = {
-		-0.5f, -0.5f, texture_positions.x_min, texture_positions.y_min,
-		-0.5f,  0.5f, texture_positions.x_min, texture_positions.y_max,
-		 0.5f,  0.5f, texture_positions.x_max, texture_positions.y_max,
-		 0.5f, -0.5f, texture_positions.x_max, texture_positions.y_min
-	};
+	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::NORTH, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::SOUTH, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::EAST, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::WEST, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::TOP, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::BOTTOM, vertices, indices);
 
 	const LayoutElement layout[] = {
-		{2, GL_FLOAT, false},
+		{3, GL_FLOAT, false},
 		{2, GL_FLOAT, false}
 	};
 
-	auto superbuffer = SuperBuffer<unsigned char>(
+	auto superbuffer = SuperBuffer<unsigned>(
 		indices, gl::Usage::STATIC_DRAW,
-		MemoryHolder(vertices), gl::Usage::STATIC_DRAW,
+		vertices, gl::Usage::STATIC_DRAW,
 		layout, 0);
 	
 	const auto shaders = {
@@ -110,7 +158,7 @@ int main() {
 	float last_time = Renderer::get_time();
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
-		Renderer::clear(gl::BitField::COLOR_BUFFER);
+		Renderer::clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
 
 
 		const float current_time = Renderer::get_time();
