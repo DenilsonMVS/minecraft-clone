@@ -19,7 +19,7 @@ BlockTextureAtlas::BlockTextureAtlas() {
 	auto texture_join = std::unique_ptr<pixel []>(new pixel[width * height]);
 	
 	int image_index = 0;
-	for(unsigned char face_id = (unsigned char) BlockFaceId::DIRT; face_id < (unsigned char) BlockFaceId::NUM_FACES; face_id++) {
+	for(unsigned char face_id = 0; face_id < (unsigned char) BlockFaceId::NUM_FACES; face_id++) {
 		const auto file_path = textures_path + block_faces[face_id].source;
 
 		int rtn_width, rtn_height, rtn_channels;

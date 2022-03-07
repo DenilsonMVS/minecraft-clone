@@ -3,9 +3,15 @@
 
 
 layout (location = 0) in vec3 pos;
-layout (location = 1) in vec2 text_pos;
+layout (location = 1) in vec3 biome_color;
+layout (location = 2) in vec2 main_text_coord;
+layout (location = 3) in vec2 sec_text_coord;
+layout (location = 4) in float bright;
 
-out vec2 text_coord;
+out vec3 v_biome_color;
+out vec2 v_main_text_coord;
+out vec2 v_sec_text_coord;
+out float v_bright;
 
 uniform mat4 u_mvp;
 
@@ -13,5 +19,8 @@ uniform mat4 u_mvp;
 void main() {
 	gl_Position = u_mvp * vec4(pos, 1);
 
-	text_coord = text_pos;
+	v_biome_color = biome_color;
+	v_main_text_coord = main_text_coord;
+	v_sec_text_coord = sec_text_coord;
+	v_bright = bright;
 }

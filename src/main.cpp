@@ -52,7 +52,10 @@ void Player::update(const float d_t, const Window &window) {
 
 struct Vertex {
 	glm::vec3 position;
-	glm::vec2 text_coord;
+	glm::vec3 biome_color;
+	glm::vec2 main_text_coord;
+	glm::vec2 sec_text_coord;
+	float bright;
 };
 
 static void build_block_face(
@@ -72,19 +75,29 @@ static void build_block_face(
 		{{0, 0, 0}, {0, 0, 1}, {1, 0, 0}, {1, 0, 1}}
 	};
 
-	const auto &text_position = get_coords(block, face);
-	const glm::vec2 vbo_text_positions[] = {
-		{text_position.x_min, text_position.y_max},
-		{text_position.x_min, text_position.y_min},
-		{text_position.x_max, text_position.y_max},
-		{text_position.x_max, text_position.y_min}
+	const auto &main_text_position = get_coords(block, face, FaceLayer::MAIN);
+	const glm::vec2 vbo_main_text_positions[] = {
+		{main_text_position.x_min, main_text_position.y_max},
+		{main_text_position.x_min, main_text_position.y_min},
+		{main_text_position.x_max, main_text_position.y_max},
+		{main_text_position.x_max, main_text_position.y_min}
 	};
 
+	const auto &sec_text_position = get_coords(block, face, FaceLayer::SECONDARY);
+	const glm::vec2 vbo_sec_text_positions[] = {
+		{sec_text_position.x_min, sec_text_position.y_max},
+		{sec_text_position.x_min, sec_text_position.y_min},
+		{sec_text_position.x_max, sec_text_position.y_max},
+		{sec_text_position.x_max, sec_text_position.y_min}
+	};
 	
 	for(int i = 0; i < num_vertices_per_face; i++) {
 		const Vertex vertex = {
 			position + face_positions[(unsigned char) face][i],
-			vbo_text_positions[i]};
+			{0.1, 0.7, 0.15},
+			vbo_main_text_positions[i],
+			vbo_sec_text_positions[i],
+			0.8};
 		vertices.push_back(vertex);
 	}
 
@@ -100,7 +113,7 @@ static void build_block_face(
 
 
 int main() {
-	
+
 	#ifndef NDEBUG
 	std::cout << std::fixed << std::setprecision(2);
 	#endif
@@ -126,16 +139,19 @@ int main() {
 	std::vector<unsigned> indices;
 	std::vector<Vertex> vertices;
 
-	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::NORTH, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::SOUTH, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::EAST, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::WEST, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::TOP, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::DIRT, FaceId::BOTTOM, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::NORTH, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::SOUTH, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::EAST, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::WEST, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::TOP, vertices, indices);
+	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::BOTTOM, vertices, indices);
 
 	const LayoutElement layout[] = {
 		{3, GL_FLOAT, false},
-		{2, GL_FLOAT, false}
+		{3, GL_FLOAT, false},
+		{2, GL_FLOAT, false},
+		{2, GL_FLOAT, false},
+		{1, GL_FLOAT, false}
 	};
 
 	auto superbuffer = SuperBuffer<unsigned>(

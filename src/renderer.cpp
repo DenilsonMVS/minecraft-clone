@@ -3,9 +3,7 @@
 
 #include "utils.hpp"
 
-#ifndef NDEBUG
 #include <iostream>
-#endif
 
 
 static void framebuffer_size_callback(GLFWwindow * const window, const int width, const int height) {

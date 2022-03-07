@@ -5,26 +5,51 @@
 #include "block_faces.hpp"
 
 
-enum BlockId : unsigned char {
+enum class BlockId : unsigned char {
 	AIR,
 	DIRT,
 	GRASS,
 	NUM_BLOCKS
 };
 
+enum class FaceLayer : unsigned char {
+	MAIN,
+	SECONDARY,
+	NUM_LAYERS,
+	AIR
+};
+
 struct BlockData {
 	bool invisible: 1;
-	BlockFaceId faces[(unsigned char) FaceId::NUM_FACES];
+	BlockFaceId faces[(unsigned char) FaceId::NUM_FACES][(unsigned char) FaceLayer::NUM_LAYERS];
 };
 
 constexpr BlockData blocks[] = {
-	{true, {BlockFaceId::NO_FACE, BlockFaceId::NO_FACE, BlockFaceId::NO_FACE, BlockFaceId::NO_FACE, BlockFaceId::NO_FACE, BlockFaceId::NO_FACE}},
-	{false, {BlockFaceId::DIRT, BlockFaceId::DIRT, BlockFaceId::DIRT, BlockFaceId::DIRT, BlockFaceId::DIRT, BlockFaceId::DIRT}},
-	{false, {BlockFaceId::GRASS_SIDE, BlockFaceId::GRASS_SIDE, BlockFaceId::GRASS_SIDE, BlockFaceId::GRASS_SIDE, BlockFaceId::GRASS_TOP, BlockFaceId::DIRT}}
+	{true, {
+		{BlockFaceId::AIR, BlockFaceId::AIR},
+		{BlockFaceId::AIR, BlockFaceId::AIR},
+		{BlockFaceId::AIR, BlockFaceId::AIR},
+		{BlockFaceId::AIR, BlockFaceId::AIR},
+		{BlockFaceId::AIR, BlockFaceId::AIR},
+		{BlockFaceId::AIR, BlockFaceId::AIR}}},
+	{false, {
+		{BlockFaceId::DIRT, BlockFaceId::AIR},
+		{BlockFaceId::DIRT, BlockFaceId::AIR},
+		{BlockFaceId::DIRT, BlockFaceId::AIR},
+		{BlockFaceId::DIRT, BlockFaceId::AIR},
+		{BlockFaceId::DIRT, BlockFaceId::AIR},
+		{BlockFaceId::DIRT, BlockFaceId::AIR}}},
+	{false, {
+		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE},
+		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE}, 
+		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE}, 
+		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE}, 
+		{BlockFaceId::AIR, BlockFaceId::GRASS_TOP}, 
+		{BlockFaceId::DIRT, BlockFaceId::AIR}}}
 };
 
 const BlockData &get_block(const BlockId id);
-const FaceData &get_block_face(const BlockId id, const FaceId face);
-const TextureCoords &get_coords(const BlockId id, const FaceId face);
+const FaceData &get_block_face(const BlockId id, const FaceId face, const FaceLayer layer);
+const TextureCoords &get_coords(const BlockId id, const FaceId face, const FaceLayer layer);
 
 #endif

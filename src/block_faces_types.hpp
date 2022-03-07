@@ -20,11 +20,12 @@ enum class FaceId : unsigned char {
 };
 
 enum class BlockFaceId : unsigned char {
+	AIR,
 	DIRT,
 	GRASS_SIDE,
 	GRASS_TOP,
 	NUM_FACES,
-	NO_FACE
+	NONE
 };
 
 struct FaceData {
