@@ -9,7 +9,8 @@ enum class BlockId : unsigned char {
 	AIR,
 	DIRT,
 	GRASS,
-	NUM_BLOCKS
+	NUM_BLOCKS,
+	NONE
 };
 
 enum class FaceLayer : unsigned char {

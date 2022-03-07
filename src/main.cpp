@@ -112,6 +112,100 @@ static void build_block_face(
 }
 
 
+
+constexpr int chunk_size = 32;
+class Chunk {
+public:
+	Chunk(const glm::ivec3 &position) :
+		position(position)
+	{
+		for(unsigned i = 0; i < chunk_size; i++)
+			for(unsigned j = 0; j < chunk_size; j++)
+				for(unsigned k = 0; k < chunk_size; k++)
+					this->blocks[i][j][k] = BlockId::AIR;
+		
+		for(unsigned i = 1; i < chunk_size - 1; i++)
+			for(unsigned j = 1; j < chunk_size - 1; j++)
+				for(unsigned k = 1; k < chunk_size - 1; k++)
+					this->blocks[i][j][k] = BlockId::GRASS;
+
+		for(unsigned i = 1; i < chunk_size - 1; i++)
+			this->blocks[i][5][5] = BlockId::AIR;
+	}
+
+	const BlockId operator[](const glm::ivec3 &position) {
+		if(
+			position.x < 0 || position.x >= chunk_size ||
+			position.y < 0 || position.y >= chunk_size ||
+			position.z < 0 || position.z >= chunk_size
+		)
+			return BlockId::NONE;
+		return this->blocks[position.x][position.y][position.z];
+	}
+
+	void build_buffer() {
+		std::vector<unsigned> indices;
+		std::vector<Vertex> vertices;
+
+		for(unsigned i = 0; i < chunk_size; i++) {
+			for(unsigned j = 0; j < chunk_size; j++) {
+				for(unsigned k = 0; k < chunk_size; k++) {
+					const glm::ivec3 position = {i, j, k};
+					const BlockId block_id = (*this)[position];
+					const BlockData &block = get_block(block_id);
+					if(block.invisible)
+						continue;
+					
+					static const glm::ivec3 relative_pos[(unsigned char) FaceId::NUM_FACES] = {
+						{ 0,  0, -1},
+						{ 0,  0,  1},
+						{ 1,  0,  0},
+						{-1,  0,  0},
+						{ 0,  1,  0},
+						{ 0, -1,  0}
+					};
+
+
+					for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
+						const BlockId near_block_id = (*this)[position + relative_pos[(unsigned char) face_id]];
+						if(near_block_id == BlockId::NONE)
+							continue;
+						
+						const BlockData &near_block = get_block(near_block_id);
+						if(near_block.invisible)
+							build_block_face(position, block_id, (FaceId) face_id, vertices, indices);
+					}
+				}
+			}
+		}
+
+
+		static const LayoutElement layout[] = {
+			{3, GL_FLOAT, false},
+			{3, GL_FLOAT, false},
+			{2, GL_FLOAT, false},
+			{2, GL_FLOAT, false},
+			{1, GL_FLOAT, false}
+		};
+
+		new(&this->buffer) SuperBuffer<unsigned>(
+			indices, gl::Usage::STATIC_DRAW,
+			vertices, gl::Usage::STATIC_DRAW,
+			layout, 0);
+	}
+
+	void draw() const {
+		this->buffer.draw();
+	}
+	
+
+private:
+	BlockId blocks[chunk_size][chunk_size][chunk_size];
+	glm::ivec3 position;
+	SuperBuffer<unsigned> buffer;
+};
+
+
 int main() {
 
 	#ifndef NDEBUG
@@ -133,31 +227,10 @@ int main() {
 	player.camera.front = {1, 0, 0};
 	player.camera.speed = 3;
 	player.camera.sensitivity = 3;
+	
 
-
-
-	std::vector<unsigned> indices;
-	std::vector<Vertex> vertices;
-
-	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::NORTH, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::SOUTH, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::EAST, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::WEST, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::TOP, vertices, indices);
-	build_block_face({0, 0, 0}, BlockId::GRASS, FaceId::BOTTOM, vertices, indices);
-
-	const LayoutElement layout[] = {
-		{3, GL_FLOAT, false},
-		{3, GL_FLOAT, false},
-		{2, GL_FLOAT, false},
-		{2, GL_FLOAT, false},
-		{1, GL_FLOAT, false}
-	};
-
-	auto superbuffer = SuperBuffer<unsigned>(
-		indices, gl::Usage::STATIC_DRAW,
-		vertices, gl::Usage::STATIC_DRAW,
-		layout, 0);
+	auto chunk = Chunk({0, 0, 0});
+	chunk.build_buffer();
 	
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
@@ -191,7 +264,8 @@ int main() {
 		u_mvp.set(player.camera.get_view_projection(window.get_dimensions(), 90));
 
 
-		superbuffer.draw();
+		chunk.draw();
+		//superbuffer.draw();
 
 		window.swap_buffers();
 		Renderer::poll_events();

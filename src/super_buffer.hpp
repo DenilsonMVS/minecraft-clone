@@ -37,6 +37,8 @@ class SuperBuffer {
 
 public:
 
+	SuperBuffer() = default;
+
 	SuperBuffer(
 		const std::span<const INDEX_TYPE> &indices,
 		const gl::Usage index_buffer_mode,

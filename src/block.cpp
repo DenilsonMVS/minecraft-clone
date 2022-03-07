@@ -1,7 +1,11 @@
 
 #include "block.hpp"
 
+#include <cassert>
+
+
 const BlockData &get_block(const BlockId id) {
+	assert(id != BlockId::NONE);
 	return blocks[(unsigned char) id];
 }
 
