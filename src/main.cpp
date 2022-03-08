@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <map>
 
 #include "renderer.hpp"
 #include "program.hpp"
@@ -114,9 +115,50 @@ static void build_block_face(
 
 
 constexpr int chunk_size = 32;
+
+
+struct MapKey : public glm::ivec3 {
+	MapKey(const glm::ivec3 &vec);
+	bool operator<(const MapKey &other) const;
+};
+
+MapKey::MapKey(const glm::ivec3 &vec) :
+	glm::ivec3(vec) {}
+
+bool MapKey::operator<(const MapKey &other) const {
+	if(this->x < other.x)
+		return true;
+	
+	if(this->x == other.x && this->y < other.y)
+		return true;
+	
+	if(this->y == other.y && this->z < other.z)
+		return true;
+	
+	return false;
+}
+
+class Chunk;
+
+class Chunks {
+public:
+	Chunks(const glm::ivec3 &quantity);
+	BlockId operator[](const glm::ivec3 &world_pos) const;
+
+	void draw() const;
+
+private:
+	std::map<MapKey, Chunk> chunks;
+};
+
+
 class Chunk {
 public:
+	Chunk() = default;
+
 	Chunk(const glm::ivec3 &position) :
+		built_buffer(false),
+		drawable(false),
 		position(position)
 	{
 		for(unsigned i = 0; i < chunk_size; i++)
@@ -133,7 +175,7 @@ public:
 			this->blocks[i][5][5] = BlockId::AIR;
 	}
 
-	const BlockId operator[](const glm::ivec3 &position) {
+	BlockId operator[](const glm::ivec3 &position) const {
 		if(
 			position.x < 0 || position.x >= chunk_size ||
 			position.y < 0 || position.y >= chunk_size ||
@@ -143,15 +185,23 @@ public:
 		return this->blocks[position.x][position.y][position.z];
 	}
 
-	void build_buffer() {
+	void build_buffer(const Chunks &chunks) {
+		if(this->built_buffer)
+			return;
+		
+		this->built_buffer = true;
+
+		
 		std::vector<unsigned> indices;
 		std::vector<Vertex> vertices;
 
 		for(unsigned i = 0; i < chunk_size; i++) {
 			for(unsigned j = 0; j < chunk_size; j++) {
 				for(unsigned k = 0; k < chunk_size; k++) {
-					const glm::ivec3 position = {i, j, k};
-					const BlockId block_id = (*this)[position];
+					const glm::ivec3 block_chunk_pos = {i, j, k};
+					const glm::ivec3 block_world_pos = this->position * chunk_size + block_chunk_pos;
+					
+					const BlockId block_id = (*this)[block_chunk_pos];
 					const BlockData &block = get_block(block_id);
 					if(block.invisible)
 						continue;
@@ -167,18 +217,28 @@ public:
 
 
 					for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
-						const BlockId near_block_id = (*this)[position + relative_pos[(unsigned char) face_id]];
-						if(near_block_id == BlockId::NONE)
-							continue;
+						const glm::ivec3 near_block_chunk_pos = block_chunk_pos + relative_pos[(unsigned char) face_id];
+						BlockId near_block_id = (*this)[near_block_chunk_pos];
+						if(near_block_id == BlockId::NONE) {
+							const glm::ivec3 near_block_global_pos = this->position * chunk_size + near_block_chunk_pos;
+							near_block_id = chunks[near_block_global_pos];
+
+							if(near_block_id == BlockId::NONE)
+								continue;
+						}
 						
 						const BlockData &near_block = get_block(near_block_id);
 						if(near_block.invisible)
-							build_block_face(position, block_id, (FaceId) face_id, vertices, indices);
+							build_block_face(block_world_pos, block_id, (FaceId) face_id, vertices, indices);
 					}
 				}
 			}
 		}
 
+
+		if(indices.size() == 0)
+			return;
+		
 
 		static const LayoutElement layout[] = {
 			{3, GL_FLOAT, false},
@@ -192,18 +252,55 @@ public:
 			indices, gl::Usage::STATIC_DRAW,
 			vertices, gl::Usage::STATIC_DRAW,
 			layout, 0);
+		this->drawable = true;
 	}
 
 	void draw() const {
-		this->buffer.draw();
+		if(this->drawable)
+			this->buffer.draw();
 	}
 	
 
 private:
+	bool built_buffer: 1;
+	bool drawable: 1;
 	BlockId blocks[chunk_size][chunk_size][chunk_size];
 	glm::ivec3 position;
 	SuperBuffer<unsigned> buffer;
 };
+
+
+
+
+Chunks::Chunks(const glm::ivec3 &quantity) {
+	for(int i = 0; i < quantity.x; i++) {
+		for(int j = 0; j < quantity.y; j++) {
+			for(int k = 0; k < quantity.z; k++) {
+				const glm::ivec3 pos = {i, j, k};
+				this->chunks[pos] = Chunk(pos);
+			}
+		}
+	}
+
+	for(auto &chunk : this->chunks)
+		chunk.second.build_buffer(*this);
+}
+
+BlockId Chunks::operator[](const glm::ivec3 &world_pos) const {
+	const glm::ivec3 chunk_pos = world_pos / chunk_size;
+	const glm::ivec3 block_pos = world_pos - chunk_pos * chunk_size;
+	
+	const auto it = this->chunks.find(chunk_pos);
+	if(it == this->chunks.end())
+		return BlockId::NONE;
+
+	return it->second[block_pos];
+}
+
+void Chunks::draw() const {
+	for(const auto &chunk : this->chunks)
+		chunk.second.draw();
+}
 
 
 int main() {
@@ -229,8 +326,7 @@ int main() {
 	player.camera.sensitivity = 3;
 	
 
-	auto chunk = Chunk({0, 0, 0});
-	chunk.build_buffer();
+	auto chunks = Chunks({4, 4, 4});
 	
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
@@ -264,8 +360,7 @@ int main() {
 		u_mvp.set(player.camera.get_view_projection(window.get_dimensions(), 90));
 
 
-		chunk.draw();
-		//superbuffer.draw();
+		chunks.draw();
 
 		window.swap_buffers();
 		Renderer::poll_events();

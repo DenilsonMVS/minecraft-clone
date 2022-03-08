@@ -46,7 +46,6 @@ public:
 		const gl::Usage vertex_buffer_mode,
 		const std::span<const LayoutElement> &layout,
 		const unsigned binding_point) :
-		binding_point(binding_point),
 		count(indices.size())
 	{
 		glCreateVertexArrays(1, &this->vao);
@@ -62,14 +61,14 @@ public:
 			vertex_size += element.count * gl::get_size(element.type);
 		
 		glNamedBufferData(this->vbo, vertex.size, vertex.data, (unsigned) vertex_buffer_mode);
-		glVertexArrayVertexBuffer(this->vao, this->binding_point, this->vbo, 0, vertex_size);
+		glVertexArrayVertexBuffer(this->vao, binding_point, this->vbo, 0, vertex_size);
 		
 		unsigned offset = 0;
 		for(unsigned i = 0; i < layout.size(); i++) {
 			const auto &element = layout[i];
 
 			glVertexArrayAttribFormat(this->vao, i, element.count, element.type, element.normalized, offset);
-			glVertexArrayAttribBinding(this->vao, i, this->binding_point);
+			glVertexArrayAttribBinding(this->vao, i, binding_point);
 			glEnableVertexArrayAttrib(this->vao, i);
 
 			offset += element.count * gl::get_size(element.type);
@@ -79,8 +78,7 @@ public:
 	SuperBuffer(SuperBuffer &&other) :
 		ibo(other.ibo),
 		vbo(other.vbo),
-		vao(other.vao), 
-		binding_point(other.binding_point), 
+		vao(other.vao),
 		count(other.count)
 	{
 		other.ibo = 0;
@@ -93,7 +91,6 @@ public:
 			this->ibo = other.ibo;
 			this->vbo = other.vbo;
 			this->vao = other.vao;
-			this->binding_point = other.binding_point;
 			this->count = other.count;
 
 			other.ibo = 0;
@@ -159,7 +156,6 @@ private:
 		};
 	};
 	unsigned vao;
-	unsigned binding_point;
 	unsigned count;
 };
 
