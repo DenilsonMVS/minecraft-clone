@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <vector>
 #include <map>
+#include <random>
 
 #include "renderer.hpp"
 #include "program.hpp"
@@ -113,19 +114,100 @@ static void build_block_face(
 }
 
 
-
 constexpr int chunk_size = 32;
 
+static glm::ivec3 get_chunk_pos_based_on_block_inside(const glm::ivec3 &block_global_pos) {
+	return {
+		block_global_pos.x < 0 ? (block_global_pos.x + 1) / chunk_size - 1 : block_global_pos.x / chunk_size,
+		block_global_pos.y < 0 ? (block_global_pos.y + 1) / chunk_size - 1 : block_global_pos.y / chunk_size,
+		block_global_pos.z < 0 ? (block_global_pos.z + 1) / chunk_size - 1 : block_global_pos.z / chunk_size
+	};
+}
 
-struct MapKey : public glm::ivec3 {
-	MapKey(const glm::ivec3 &vec);
-	bool operator<(const MapKey &other) const;
+static glm::ivec2 get_chunk_pos_based_on_block_inside(const glm::ivec2 &block_global_pos) {
+	return {
+		block_global_pos.x < 0 ? (block_global_pos.x + 1) / chunk_size - 1 : block_global_pos.x / chunk_size,
+		block_global_pos.y < 0 ? (block_global_pos.y + 1) / chunk_size - 1 : block_global_pos.y / chunk_size
+	};
+}
+
+
+struct ivec2_key : public glm::ivec2 {
+	ivec2_key(const glm::ivec2 &vec);
+	bool operator<(const ivec2_key &other) const;
 };
 
-MapKey::MapKey(const glm::ivec3 &vec) :
+ivec2_key::ivec2_key(const glm::ivec2 &vec) :
+	glm::ivec2(vec) {}
+
+bool ivec2_key::operator<(const ivec2_key &other) const {
+	if(this->x < other.x)
+		return true;
+	
+	if(this->x == other.x && this->y < other.y)
+		return true;
+	
+	return false;
+}
+
+struct WorldGeneratorChunk {
+	int height[chunk_size][chunk_size];
+};
+
+class WorldGenerator {
+public:
+	int get_height(const glm::ivec2 &position);
+
+private:
+	const WorldGeneratorChunk &generate_chunk(const glm::ivec2 &position);
+	int generator_get_height(const glm::ivec2 &global_position);
+
+	std::map<ivec2_key, WorldGeneratorChunk> chunks;
+};
+
+int WorldGenerator::get_height(const glm::ivec2 &position) {
+	const glm::ivec2 chunk_pos = get_chunk_pos_based_on_block_inside(position);
+	const glm::ivec2 block_pos_in_chunk = position - chunk_pos * chunk_size;
+	const auto it = this->chunks.find(chunk_pos);
+	
+	if(it == this->chunks.end()) {
+		const auto &chunk = this->generate_chunk(chunk_pos);
+		return chunk.height[block_pos_in_chunk.x][block_pos_in_chunk.y];
+	}
+	
+	return it->second.height[block_pos_in_chunk.x][block_pos_in_chunk.y];
+}
+
+const WorldGeneratorChunk &WorldGenerator::generate_chunk(const glm::ivec2 &chunk_position) {
+	auto &chunk = this->chunks[chunk_position];
+
+	for(int i = 0; i < chunk_size; i++) {
+		for(int j = 0; j < chunk_size; j++) {
+			const glm::ivec2 chunk_pos = {i, j};
+			const glm::ivec2 global_pos = chunk_position * chunk_size + chunk_pos;
+			chunk.height[i][j] = this->generator_get_height(global_pos);
+		}
+	}
+
+	return chunk;
+}
+
+int WorldGenerator::generator_get_height(const glm::ivec2 &global_position) {
+	static auto random_engine = std::default_random_engine();
+	static auto distribution = std::uniform_int_distribution(-chunk_size, chunk_size);
+	return distribution(random_engine);
+}
+
+
+struct ivec3_key : public glm::ivec3 {
+	ivec3_key(const glm::ivec3 &vec);
+	bool operator<(const ivec3_key &other) const;
+};
+
+ivec3_key::ivec3_key(const glm::ivec3 &vec) :
 	glm::ivec3(vec) {}
 
-bool MapKey::operator<(const MapKey &other) const {
+bool ivec3_key::operator<(const ivec3_key &other) const {
 	if(this->x < other.x)
 		return true;
 	
@@ -142,13 +224,14 @@ class Chunk;
 
 class Chunks {
 public:
-	Chunks(const glm::ivec3 &quantity);
+	Chunks(const glm::ivec3 &min, const glm::ivec3 &max);
 	BlockId operator[](const glm::ivec3 &world_pos) const;
 
 	void draw() const;
 
 private:
-	std::map<MapKey, Chunk> chunks;
+	std::map<ivec3_key, Chunk> chunks;
+	WorldGenerator generator;
 };
 
 
@@ -156,23 +239,34 @@ class Chunk {
 public:
 	Chunk() = default;
 
-	Chunk(const glm::ivec3 &position) :
+	Chunk(const glm::ivec3 &position, WorldGenerator &generator) :
 		built_buffer(false),
 		drawable(false),
 		position(position)
 	{
-		for(unsigned i = 0; i < chunk_size; i++)
-			for(unsigned j = 0; j < chunk_size; j++)
-				for(unsigned k = 0; k < chunk_size; k++)
+		const glm::ivec2 pos2 = {this->position.x, this->position.z};
+		for(int i = 0; i < chunk_size; i++) {
+			for(int k = 0; k < chunk_size; k++) {
+				const glm::ivec2 block_chunk_pos = {i, k};
+				const glm::ivec2 block_global_pos = pos2 * chunk_size + block_chunk_pos;
+				
+				const int height = generator.get_height(block_global_pos);
+				const int block_chunk_height = height - this->position.y * chunk_size;
+				
+				int j = 0;
+				for(; j < (block_chunk_height - 3) && j < chunk_size; j++)
+					this->blocks[i][j][k] = BlockId::STONE;
+				
+				for(; j < block_chunk_height && j < chunk_size; j++)
+					this->blocks[i][j][k] = BlockId::DIRT;
+				
+				if(block_chunk_height >= 0 && block_chunk_height < chunk_size)
+					this->blocks[i][j++][k] = BlockId::GRASS;
+				
+				for(; j < chunk_size; j++)
 					this->blocks[i][j][k] = BlockId::AIR;
-		
-		for(unsigned i = 1; i < chunk_size - 1; i++)
-			for(unsigned j = 1; j < chunk_size - 1; j++)
-				for(unsigned k = 1; k < chunk_size - 1; k++)
-					this->blocks[i][j][k] = BlockId::GRASS;
-
-		for(unsigned i = 1; i < chunk_size - 1; i++)
-			this->blocks[i][5][5] = BlockId::AIR;
+			}
+		}
 	}
 
 	BlockId operator[](const glm::ivec3 &position) const {
@@ -272,29 +366,31 @@ private:
 
 
 
-Chunks::Chunks(const glm::ivec3 &quantity) {
-	for(int i = 0; i < quantity.x; i++) {
-		for(int j = 0; j < quantity.y; j++) {
-			for(int k = 0; k < quantity.z; k++) {
+Chunks::Chunks(const glm::ivec3 &min, const glm::ivec3 &max) {
+	
+	for(int i = min.x; i < max.x; i++) {
+		for(int j = min.y; j < max.y; j++) {
+			for(int k = min.z; k < max.z; k++) {
 				const glm::ivec3 pos = {i, j, k};
-				this->chunks[pos] = Chunk(pos);
+				Chunk &chunk_ref = this->chunks[pos];
+				new(&chunk_ref) Chunk(pos, this->generator);
 			}
 		}
 	}
-
+	
 	for(auto &chunk : this->chunks)
 		chunk.second.build_buffer(*this);
 }
 
-BlockId Chunks::operator[](const glm::ivec3 &world_pos) const {
-	const glm::ivec3 chunk_pos = world_pos / chunk_size;
-	const glm::ivec3 block_pos = world_pos - chunk_pos * chunk_size;
+BlockId Chunks::operator[](const glm::ivec3 &block_world_pos) const {
+	const glm::ivec3 chunk_pos = get_chunk_pos_based_on_block_inside(block_world_pos);
 	
 	const auto it = this->chunks.find(chunk_pos);
 	if(it == this->chunks.end())
 		return BlockId::NONE;
-
-	return it->second[block_pos];
+	
+	const glm::ivec3 chunk_block_pos = block_world_pos - chunk_pos * chunk_size;
+	return it->second[chunk_block_pos];
 }
 
 void Chunks::draw() const {
@@ -322,12 +418,13 @@ int main() {
 	auto player = Player(window);
 	player.camera.position = {0, 0, -1};
 	player.camera.front = {1, 0, 0};
-	player.camera.speed = 3;
+	player.camera.speed = 10;
 	player.camera.sensitivity = 3;
 	
-
-	auto chunks = Chunks({4, 4, 4});
 	
+	auto chunks = Chunks({-2, -2, -2}, {2, 2, 2});
+	
+
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
 		Shader("resources/shaders/main.frag")

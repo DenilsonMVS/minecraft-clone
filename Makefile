@@ -19,6 +19,9 @@ all: $(TARGET)
 release: FLAGS += -DNDEBUG -O3
 release: $(TARGET)
 
+valgrind: FLAGS += -g
+valgrind: $(TARGET)
+
 
 $(TARGET): $(BIN) $(BUILD) $(OBJS)
 	$(CC) $(FLAGS) $(OBJS) $(LIBS) -o $@

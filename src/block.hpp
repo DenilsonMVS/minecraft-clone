@@ -9,6 +9,7 @@ enum class BlockId : unsigned char {
 	AIR,
 	DIRT,
 	GRASS,
+	STONE,
 	NUM_BLOCKS,
 	NONE
 };
@@ -46,7 +47,14 @@ constexpr BlockData blocks[] = {
 		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE}, 
 		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE}, 
 		{BlockFaceId::AIR, BlockFaceId::GRASS_TOP}, 
-		{BlockFaceId::DIRT, BlockFaceId::AIR}}}
+		{BlockFaceId::DIRT, BlockFaceId::AIR}}},
+	{false, {
+		{BlockFaceId::STONE, BlockFaceId::AIR},
+		{BlockFaceId::STONE, BlockFaceId::AIR},
+		{BlockFaceId::STONE, BlockFaceId::AIR},
+		{BlockFaceId::STONE, BlockFaceId::AIR},
+		{BlockFaceId::STONE, BlockFaceId::AIR},
+		{BlockFaceId::STONE, BlockFaceId::AIR}}}
 };
 
 const BlockData &get_block(const BlockId id);

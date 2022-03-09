@@ -24,6 +24,7 @@ enum class BlockFaceId : unsigned char {
 	DIRT,
 	GRASS_SIDE,
 	GRASS_TOP,
+	STONE,
 	NUM_FACES,
 	NONE
 };
