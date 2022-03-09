@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <vector>
 #include <map>
+#include <queue>
 #include <random>
 
 #include "renderer.hpp"
@@ -114,6 +115,15 @@ static void build_block_face(
 }
 
 
+static const glm::ivec3 relative_pos[(unsigned char) FaceId::NUM_FACES] = {
+	{ 0,  0, -1},
+	{ 0,  0,  1},
+	{ 1,  0,  0},
+	{-1,  0,  0},
+	{ 0,  1,  0},
+	{ 0, -1,  0}
+};
+
 constexpr int chunk_size = 32;
 
 static glm::ivec3 get_chunk_pos_based_on_block_inside(const glm::ivec3 &block_global_pos) {
@@ -194,7 +204,7 @@ const WorldGeneratorChunk &WorldGenerator::generate_chunk(const glm::ivec2 &chun
 
 int WorldGenerator::generator_get_height(const glm::ivec2 &global_position) {
 	static auto random_engine = std::default_random_engine();
-	static auto distribution = std::uniform_int_distribution(-chunk_size, chunk_size);
+	static auto distribution = std::uniform_int_distribution(-3 * chunk_size, 3 * chunk_size);
 	return distribution(random_engine);
 }
 
@@ -220,18 +230,23 @@ bool ivec3_key::operator<(const ivec3_key &other) const {
 	return false;
 }
 
+
 class Chunk;
 
 class Chunks {
 public:
-	Chunks(const glm::ivec3 &min, const glm::ivec3 &max);
+	Chunks(const int range);
 	BlockId operator[](const glm::ivec3 &world_pos) const;
 
+	void gen_chunks();
+	void gen_chunks(const int quantity);
 	void draw() const;
 
 private:
 	std::map<ivec3_key, Chunk> chunks;
+	std::queue<glm::ivec3> chunks_to_generate;
 	WorldGenerator generator;
+	int range;
 };
 
 
@@ -299,15 +314,6 @@ public:
 					const BlockData &block = get_block(block_id);
 					if(block.invisible)
 						continue;
-					
-					static const glm::ivec3 relative_pos[(unsigned char) FaceId::NUM_FACES] = {
-						{ 0,  0, -1},
-						{ 0,  0,  1},
-						{ 1,  0,  0},
-						{-1,  0,  0},
-						{ 0,  1,  0},
-						{ 0, -1,  0}
-					};
 
 
 					for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
@@ -366,21 +372,70 @@ private:
 
 
 
-Chunks::Chunks(const glm::ivec3 &min, const glm::ivec3 &max) {
-	
-	for(int i = min.x; i < max.x; i++) {
-		for(int j = min.y; j < max.y; j++) {
-			for(int k = min.z; k < max.z; k++) {
-				const glm::ivec3 pos = {i, j, k};
-				Chunk &chunk_ref = this->chunks[pos];
-				new(&chunk_ref) Chunk(pos, this->generator);
+Chunks::Chunks(const int range) :
+	range(range)
+{
+	if(this->range > 0)
+		this->chunks_to_generate.push({0, 0, 0});
+
+	for(int distance = 1; distance <= this->range; distance++) {
+		for(int i = -distance; i <= distance; i++) {
+			for(int j = -distance; j <= distance; j++) {
+				const glm::ivec3 pos = {i, distance, j};
+				this->chunks_to_generate.push(pos);
+				this->chunks_to_generate.push(-pos);
+			}
+		}
+
+		for(int i = -distance; i <= distance; i++) {
+			for(int j = -distance + 1; j < distance; j++) {
+				const glm::ivec3 pos = {i, j, distance};
+				this->chunks_to_generate.push(pos);
+				this->chunks_to_generate.push(-pos);
+			}
+		}
+
+		for(int i = -distance + 1; i < distance; i++) {
+			for(int j = -distance + 1; j < distance; j++) {
+				const glm::ivec3 pos = {distance, i, j};
+				this->chunks_to_generate.push(pos);
+				this->chunks_to_generate.push(-pos);
 			}
 		}
 	}
-	
-	for(auto &chunk : this->chunks)
-		chunk.second.build_buffer(*this);
+
+	/*for(int i = -this->range; i < range; i++)
+		for(int j = -this->range; j < range; j++)
+			for(int k = -this->range; k < range; k++)
+				this->chunks_to_generate.push({i, j, k});*/
 }
+
+void Chunks::gen_chunks() {
+	while(!this->chunks_to_generate.empty()) {
+		const auto &pos = this->chunks_to_generate.front();
+		Chunk &chunk = this->chunks[pos];		
+		new (&chunk) Chunk(pos, this->generator);
+		this->chunks_to_generate.pop();
+	}
+
+	for(auto &chunk : this->chunks)
+		chunk.second.build_buffer(*this); // Gambiarra tbm
+}
+
+void Chunks::gen_chunks(const int quantity) {
+	for(int i = 0; i < quantity; i++) {
+		if(this->chunks_to_generate.empty())
+			return;
+		
+		const auto &pos = this->chunks_to_generate.front();
+		Chunk &chunk = this->chunks[pos];		
+		new (&chunk) Chunk(pos, this->generator);
+		this->chunks_to_generate.pop();
+
+		chunk.build_buffer(*this); // Gambiarra por enquanto
+	}
+}
+
 
 BlockId Chunks::operator[](const glm::ivec3 &block_world_pos) const {
 	const glm::ivec3 chunk_pos = get_chunk_pos_based_on_block_inside(block_world_pos);
@@ -422,7 +477,8 @@ int main() {
 	player.camera.sensitivity = 3;
 	
 	
-	auto chunks = Chunks({-2, -2, -2}, {2, 2, 2});
+	auto chunks = Chunks(3);
+	//chunks.gen_chunks();
 	
 
 	const auto shaders = {
@@ -440,6 +496,8 @@ int main() {
 	float last_time = Renderer::get_time();
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
+		chunks.gen_chunks(1);
+		
 		Renderer::clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
 
 
