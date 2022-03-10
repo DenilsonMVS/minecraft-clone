@@ -5,6 +5,7 @@
 #include <map>
 #include <queue>
 #include <random>
+#include <array>
 
 #include "renderer.hpp"
 #include "program.hpp"
@@ -69,14 +70,15 @@ static void build_block_face(
 	std::vector<unsigned> &indices)
 {
 	constexpr int num_vertices_per_face = 4;
-	static const glm::ivec3 face_positions[(unsigned char) FaceId::NUM_FACES][num_vertices_per_face] = {
-		{{1, 0, 0}, {1, 1, 0}, {0, 0, 0}, {0, 1, 0}},
-		{{0, 0, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 1}},
-		{{1, 0, 1}, {1, 1, 1}, {1, 0, 0}, {1, 1, 0}},
-		{{0, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 1, 1}},
-		{{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {1, 1, 1}},
-		{{0, 0, 0}, {0, 0, 1}, {1, 0, 0}, {1, 0, 1}}
-	};
+	static const std::array<std::array<glm::ivec3, num_vertices_per_face>, (unsigned char) FaceId::NUM_FACES> face_positions = {{
+		{{{1, 0, 0}, {1, 1, 0}, {0, 0, 0}, {0, 1, 0}}},
+		{{{0, 0, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 1}}},
+		{{{1, 0, 1}, {1, 1, 1}, {1, 0, 0}, {1, 1, 0}}},
+		{{{0, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 1, 1}}},
+		{{{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {1, 1, 1}}},
+		{{{0, 0, 0}, {0, 0, 1}, {1, 0, 0}, {1, 0, 1}}}
+	}};
+
 
 	const auto &main_text_position = get_coords(block, face, FaceLayer::MAIN);
 	const glm::vec2 vbo_main_text_positions[] = {
@@ -104,25 +106,15 @@ static void build_block_face(
 		vertices.push_back(vertex);
 	}
 
-	
-	static const unsigned indices_base[] = {
+	static const std::array<unsigned, 6> indices_base = {{
 		2, 1, 0,
 		2, 3, 1
-	};
-	const unsigned last_index = indices.size() / (sizeof(indices_base) / sizeof(indices_base[0])) * 4;
+	}};
+	const unsigned last_index = indices.size() / indices_base.size() * 4;
 	for(const auto &index : indices_base)
 		indices.push_back(last_index + index);
 }
 
-
-static const glm::ivec3 relative_pos[(unsigned char) FaceId::NUM_FACES] = {
-	{ 0,  0, -1},
-	{ 0,  0,  1},
-	{ 1,  0,  0},
-	{-1,  0,  0},
-	{ 0,  1,  0},
-	{ 0, -1,  0}
-};
 
 constexpr int chunk_size = 32;
 
@@ -151,12 +143,9 @@ ivec2_key::ivec2_key(const glm::ivec2 &vec) :
 	glm::ivec2(vec) {}
 
 bool ivec2_key::operator<(const ivec2_key &other) const {
-	if(this->x < other.x)
-		return true;
-	
-	if(this->x == other.x && this->y < other.y)
-		return true;
-	
+	for(unsigned char i = 0; i < 2; i++)
+		if((*this)[i] != other[i])
+			return (*this)[i] < other[i];
 	return false;
 }
 
@@ -218,15 +207,9 @@ ivec3_key::ivec3_key(const glm::ivec3 &vec) :
 	glm::ivec3(vec) {}
 
 bool ivec3_key::operator<(const ivec3_key &other) const {
-	if(this->x < other.x)
-		return true;
-	
-	if(this->x == other.x && this->y < other.y)
-		return true;
-	
-	if(this->y == other.y && this->z < other.z)
-		return true;
-	
+	for(unsigned char i = 0; i < 3; i++)
+		if((*this)[i] != other[i])
+			return (*this)[i] < other[i];
 	return false;
 }
 
@@ -235,7 +218,7 @@ class Chunk;
 
 class Chunks {
 public:
-	Chunks(const int range);
+	Chunks(const int radius);
 	BlockId operator[](const glm::ivec3 &world_pos) const;
 
 	void gen_chunks();
@@ -246,7 +229,7 @@ private:
 	std::map<ivec3_key, Chunk> chunks;
 	std::queue<glm::ivec3> chunks_to_generate;
 	WorldGenerator generator;
-	int range;
+	int radius;
 };
 
 
@@ -315,6 +298,14 @@ public:
 					if(block.invisible)
 						continue;
 
+					static const std::array<glm::ivec3, (unsigned char) FaceId::NUM_FACES> relative_pos = {{
+						{ 0,  0, -1},
+						{ 0,  0,  1},
+						{ 1,  0,  0},
+						{-1,  0,  0},
+						{ 0,  1,  0},
+						{ 0, -1,  0}
+					}};
 
 					for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
 						const glm::ivec3 near_block_chunk_pos = block_chunk_pos + relative_pos[(unsigned char) face_id];
@@ -340,13 +331,13 @@ public:
 			return;
 		
 
-		static const LayoutElement layout[] = {
+		static const std::array<LayoutElement, 5> layout = {{
 			{3, GL_FLOAT, false},
 			{3, GL_FLOAT, false},
 			{2, GL_FLOAT, false},
 			{2, GL_FLOAT, false},
 			{1, GL_FLOAT, false}
-		};
+		}};
 
 		new(&this->buffer) SuperBuffer<unsigned>(
 			indices, gl::Usage::STATIC_DRAW,
@@ -372,13 +363,13 @@ private:
 
 
 
-Chunks::Chunks(const int range) :
-	range(range)
+Chunks::Chunks(const int radius) :
+	radius(radius)
 {
-	if(this->range > 0)
+	if(this->radius > 0)
 		this->chunks_to_generate.push({0, 0, 0});
 
-	for(int distance = 1; distance <= this->range; distance++) {
+	for(int distance = 1; distance <= this->radius; distance++) {
 		for(int i = -distance; i <= distance; i++) {
 			for(int j = -distance; j <= distance; j++) {
 				const glm::ivec3 pos = {i, distance, j};
@@ -403,11 +394,6 @@ Chunks::Chunks(const int range) :
 			}
 		}
 	}
-
-	/*for(int i = -this->range; i < range; i++)
-		for(int j = -this->range; j < range; j++)
-			for(int k = -this->range; k < range; k++)
-				this->chunks_to_generate.push({i, j, k});*/
 }
 
 void Chunks::gen_chunks() {
@@ -478,8 +464,6 @@ int main() {
 	
 	
 	auto chunks = Chunks(3);
-	//chunks.gen_chunks();
-	
 
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
@@ -509,11 +493,13 @@ int main() {
 		player.update(d_t, window);
 
 		#ifndef NDEBUG
-		std::cout << player.camera.position.x << ' ' << player.camera.position.y << ' ' << player.camera.position.z << '\n';
+		std::cout << "pos: " << player.camera.position.x << ' ' << player.camera.position.y << ' ' << player.camera.position.z << '\n';
+		const glm::ivec3 int_pos = player.camera.position;
+		const glm::ivec3 chunk_pos = get_chunk_pos_based_on_block_inside(int_pos);
+		std::cout << "chunk_pos: " << chunk_pos.x << ' ' << chunk_pos.y << ' ' << chunk_pos.z << '\n';
 		#endif
 
 		u_mvp.set(player.camera.get_view_projection(window.get_dimensions(), 90));
-
 
 		chunks.draw();
 
