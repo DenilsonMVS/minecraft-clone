@@ -18,14 +18,12 @@
 
 
 struct Player {
-	Player(const Window &window);
+	Player() = default;
 	void update(const float d_t, const Window &window);
 
 	Camera camera;
 };
 
-Player::Player(const Window &window) :
-	camera(window.get_mouse_pos()) {}
 
 void Player::update(const float d_t, const Window &window) {
 
@@ -456,7 +454,7 @@ int main() {
 
 	auto atlas = BlockTextureAtlas();
 
-	auto player = Player(window);
+	auto player = Player();
 	player.camera.position = {0, 0, -1};
 	player.camera.front = {1, 0, 0};
 	player.camera.speed = 10;

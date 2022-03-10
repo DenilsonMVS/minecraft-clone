@@ -2,10 +2,10 @@
 #include "camera.hpp"
 
 
-Camera::Camera(const glm::vec2 mouse_position, const float sensitivity, const float speed) :
+Camera::Camera(const float sensitivity, const float speed) :
 	position(0.0f, 0.0f, 0.0f),
 	sensitivity(sensitivity), speed(speed),
-	last_mouse_pos(mouse_position),
+	last_mouse_pos({0, 0}),
 	pitch(0.0f), yaw(0.0f) {
 
 	this->front = glm::normalize(glm::vec3(

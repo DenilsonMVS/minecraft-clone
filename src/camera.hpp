@@ -8,7 +8,7 @@
 
 class Camera {
 public:
-	Camera(const glm::vec2 mouse_position, const float sensitivity = 1.0f, const float speed = 3.0f);
+	Camera(const float sensitivity = 1.0f, const float speed = 3.0f);
 
 	void update(const glm::vec2 mouse_pos, const float d_time);
 	glm::mat4 get_view_projection(
