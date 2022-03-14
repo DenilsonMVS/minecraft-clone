@@ -14,6 +14,7 @@
 #include "super_buffer.hpp"
 #include "camera.hpp"
 
+#include "perlin_noise.hpp"
 #include "block.hpp"
 
 
@@ -160,6 +161,7 @@ private:
 	int generator_get_height(const glm::ivec2 &global_position);
 
 	std::map<ivec2_key, WorldGeneratorChunk> chunks;
+	PerlinNoise noise_generator;
 };
 
 int WorldGenerator::get_height(const glm::ivec2 &position) {
@@ -190,9 +192,27 @@ const WorldGeneratorChunk &WorldGenerator::generate_chunk(const glm::ivec2 &chun
 }
 
 int WorldGenerator::generator_get_height(const glm::ivec2 &global_position) {
-	static auto random_engine = std::default_random_engine();
-	static auto distribution = std::uniform_int_distribution(-3 * chunk_size, 3 * chunk_size);
-	return distribution(random_engine);
+	const float max_perlin_amplitude = std::sqrt(0.5);
+
+	const float f1 = 1.0f / 256, a1 = 64 / max_perlin_amplitude;
+	const float f2 = 1.0f / 128, a2 = 32 / max_perlin_amplitude;
+	const float f3 = 1.0f /  64, a3 = 16 / max_perlin_amplitude;
+	const float f4 = 1.0f /  32, a4 = 8  / max_perlin_amplitude;
+	const float f5 = 1.0f /  16, a5 = 4  / max_perlin_amplitude;
+	const float f6 = 1.0f /   8, a6 = 2  / max_perlin_amplitude;
+	const float f7 = 1.0f /   4, a7 = 1  / max_perlin_amplitude;
+
+	const auto pos = glm::vec3(global_position.x, 0.0f, global_position.y);
+
+
+	return
+		a1 * noise_generator.noise(pos * f1) +
+		a2 * noise_generator.noise(pos * f2) +
+		a3 * noise_generator.noise(pos * f3) +
+		a4 * noise_generator.noise(pos * f4) +
+		a5 * noise_generator.noise(pos * f5) +
+		a6 * noise_generator.noise(pos * f6) +
+		a7 * noise_generator.noise(pos * f7);
 }
 
 
@@ -219,17 +239,30 @@ public:
 	Chunks(const int radius);
 	BlockId operator[](const glm::ivec3 &world_pos) const;
 
+	Chunk &get_chunk(const glm::ivec3 &chunk_pos);
+	const Chunk &get_chunk(const glm::ivec3 &chunk_pos) const;
+
 	void gen_chunks();
 	void gen_chunks(const int quantity);
 	void draw() const;
+	void update();
 
-private:
+//private:
 	std::map<ivec3_key, Chunk> chunks;
 	std::queue<glm::ivec3> chunks_to_generate;
 	WorldGenerator generator;
 	int radius;
 };
 
+
+static const std::array<glm::ivec3, (unsigned char) FaceId::NUM_FACES> relative_pos = {{
+	{ 0,  0, -1},
+	{ 0,  0,  1},
+	{ 1,  0,  0},
+	{-1,  0,  0},
+	{ 0,  1,  0},
+	{ 0, -1,  0}
+}};
 
 class Chunk {
 public:
@@ -238,7 +271,9 @@ public:
 	Chunk(const glm::ivec3 &position, WorldGenerator &generator) :
 		built_buffer(false),
 		drawable(false),
-		position(position)
+		need_update(true),
+		position(position),
+		buffer(layout, 0)
 	{
 		const glm::ivec2 pos2 = {this->position.x, this->position.z};
 		for(int i = 0; i < chunk_size; i++) {
@@ -275,8 +310,8 @@ public:
 		return this->blocks[position.x][position.y][position.z];
 	}
 
-	void build_buffer(const Chunks &chunks) {
-		if(this->built_buffer)
+	void build_buffer_if_necessary(const Chunks &chunks) {
+		if(this->built_buffer && !this->need_update)
 			return;
 		
 		this->built_buffer = true;
@@ -295,15 +330,6 @@ public:
 					const BlockData &block = get_block(block_id);
 					if(block.invisible)
 						continue;
-
-					static const std::array<glm::ivec3, (unsigned char) FaceId::NUM_FACES> relative_pos = {{
-						{ 0,  0, -1},
-						{ 0,  0,  1},
-						{ 1,  0,  0},
-						{-1,  0,  0},
-						{ 0,  1,  0},
-						{ 0, -1,  0}
-					}};
 
 					for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
 						const glm::ivec3 near_block_chunk_pos = block_chunk_pos + relative_pos[(unsigned char) face_id];
@@ -328,35 +354,55 @@ public:
 		if(indices.size() == 0)
 			return;
 		
-
-		static const std::array<LayoutElement, 5> layout = {{
-			{3, GL_FLOAT, false},
-			{3, GL_FLOAT, false},
-			{2, GL_FLOAT, false},
-			{2, GL_FLOAT, false},
-			{1, GL_FLOAT, false}
-		}};
-
-		new(&this->buffer) SuperBuffer<unsigned>(
-			indices, gl::Usage::STATIC_DRAW,
-			vertices, gl::Usage::STATIC_DRAW,
-			layout, 0);
+		this->buffer.assign_data(std::span(indices), gl::Usage::STATIC_DRAW);
+		this->buffer.assign_data(vertices, gl::Usage::STATIC_DRAW);
+		
+		this->need_update = false;
 		this->drawable = true;
 	}
 
+	void mark_for_update() {
+		this->need_update = true;
+	}
+
 	void draw() const {
+		/*if(this->position == glm::ivec3 {-3, -2, -2}) {
+			std::cout << this->position.x << ' ' << this->position.y << ' ' << this->position.z << '\n';
+			std::cout << this->built_buffer << '\n';
+			std::cout << this->drawable << '\n';
+			std::cout << this->need_update << '\n';
+			std::cout << this->buffer.count << '\n';
+		}
+		if(this->position == glm::ivec3 {-2, -2, -2}) {
+			std::cout << this->position.x << ' ' << this->position.y << ' ' << this->position.z << '\n';
+			std::cout << this->built_buffer << '\n';
+			std::cout << this->drawable << '\n';
+			std::cout << this->need_update << '\n';
+			std::cout << this->buffer.count << '\n';
+		}*/
 		if(this->drawable)
 			this->buffer.draw();
 	}
 	
 
 private:
+	static const std::array<LayoutElement, 5> layout;
+
 	bool built_buffer: 1;
 	bool drawable: 1;
+	bool need_update: 1;
 	BlockId blocks[chunk_size][chunk_size][chunk_size];
 	glm::ivec3 position;
 	SuperBuffer<unsigned> buffer;
 };
+
+const std::array<LayoutElement, 5> Chunk::layout = {{
+	{3, GL_FLOAT, false},
+	{3, GL_FLOAT, false},
+	{2, GL_FLOAT, false},
+	{2, GL_FLOAT, false},
+	{1, GL_FLOAT, false}
+}};
 
 
 
@@ -364,7 +410,7 @@ private:
 Chunks::Chunks(const int radius) :
 	radius(radius)
 {
-	if(this->radius > 0)
+	if(this->radius >= 0)
 		this->chunks_to_generate.push({0, 0, 0});
 
 	for(int distance = 1; distance <= this->radius; distance++) {
@@ -394,16 +440,33 @@ Chunks::Chunks(const int radius) :
 	}
 }
 
+Chunk &Chunks::get_chunk(const glm::ivec3 &chunk_pos) {
+	const auto it = this->chunks.find(chunk_pos);
+	assert(it != this->chunks.end());
+	return it->second;
+}
+
+const Chunk &Chunks::get_chunk(const glm::ivec3 &chunk_pos) const {
+	const auto it = this->chunks.find(chunk_pos);
+	assert(it != this->chunks.end());
+	return it->second;
+}
+
 void Chunks::gen_chunks() {
 	while(!this->chunks_to_generate.empty()) {
-		const auto &pos = this->chunks_to_generate.front();
+		const auto pos = this->chunks_to_generate.front();
+		this->chunks_to_generate.pop();
+		
 		Chunk &chunk = this->chunks[pos];		
 		new (&chunk) Chunk(pos, this->generator);
-		this->chunks_to_generate.pop();
+		
+		for(unsigned char i = 0; i < (unsigned char) FaceId::NUM_FACES; i++) {
+			const glm::ivec3 side_chunk_pos = pos + relative_pos[i];
+			const auto it = this->chunks.find(side_chunk_pos);
+			if(it != this->chunks.end())
+				it->second.mark_for_update();	
+		}
 	}
-
-	for(auto &chunk : this->chunks)
-		chunk.second.build_buffer(*this); // Gambiarra tbm
 }
 
 void Chunks::gen_chunks(const int quantity) {
@@ -411,12 +474,18 @@ void Chunks::gen_chunks(const int quantity) {
 		if(this->chunks_to_generate.empty())
 			return;
 		
-		const auto &pos = this->chunks_to_generate.front();
-		Chunk &chunk = this->chunks[pos];		
-		new (&chunk) Chunk(pos, this->generator);
+		const auto pos = this->chunks_to_generate.front();
 		this->chunks_to_generate.pop();
 
-		chunk.build_buffer(*this); // Gambiarra por enquanto
+		Chunk &chunk = this->chunks[pos];		
+		new (&chunk) Chunk(pos, this->generator);
+		
+		for(unsigned char i = 0; i < (unsigned char) FaceId::NUM_FACES; i++) {
+			const glm::ivec3 side_chunk_pos = pos + relative_pos[i];
+			const auto it = this->chunks.find(side_chunk_pos);
+			if(it != this->chunks.end())
+				it->second.mark_for_update();	
+		}
 	}
 }
 
@@ -437,6 +506,11 @@ void Chunks::draw() const {
 		chunk.second.draw();
 }
 
+void Chunks::update() {
+	for(auto &chunk : this->chunks)
+		chunk.second.build_buffer_if_necessary(*this);
+}
+
 
 int main() {
 
@@ -455,13 +529,20 @@ int main() {
 	auto atlas = BlockTextureAtlas();
 
 	auto player = Player();
-	player.camera.position = {0, 0, -1};
+	player.camera.position = {0, 0, 0};
 	player.camera.front = {1, 0, 0};
 	player.camera.speed = 10;
 	player.camera.sensitivity = 3;
 	
 	
 	auto chunks = Chunks(3);
+	chunks.gen_chunks();
+	chunks.update();
+	
+	
+	auto chunk2 = Chunk({-3, -2, -2}, chunks.generator);
+	
+	chunk2.build_buffer_if_necessary(chunks);
 
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
@@ -475,11 +556,12 @@ int main() {
 	auto u_mvp = program.get_uniform("u_mvp");
 
 
+	
+	
+
 	float last_time = Renderer::get_time();
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
-		chunks.gen_chunks(1);
-		
 		Renderer::clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
 
 
@@ -500,6 +582,7 @@ int main() {
 		u_mvp.set(player.camera.get_view_projection(window.get_dimensions(), 90));
 
 		chunks.draw();
+		chunk2.draw(); //precisa tirar isso daqui
 
 		window.swap_buffers();
 		Renderer::poll_events();
