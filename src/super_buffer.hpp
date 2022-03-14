@@ -27,103 +27,58 @@ struct LayoutElement {
 	unsigned normalized;
 };
 
-template<typename INDEX_TYPE>
-class SuperBuffer {
-	enum {
-		INDEX_BUFFER,
-		VERTEX_BUFFER,
-		NUM_BUFFERS
-	};
 
+class SuperBuffer {
 public:
 
 	SuperBuffer() = default;
 
-	SuperBuffer(
-		const std::span<const LayoutElement> &layout,
-		const unsigned binding_point) :
-		count(0)
+	SuperBuffer(const std::span<const LayoutElement> &layout)
 	{
 		glCreateVertexArrays(1, &this->vao);
+		glCreateBuffers(1, &this->vbo);
+		
 		glBindVertexArray(this->vao);
-
-		glCreateBuffers(2, this->buffers);
-
-		glVertexArrayElementBuffer(this->vao, this->ibo);
+		glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
 		unsigned vertex_size = 0;
 		for(const auto &element : layout)
 			vertex_size += element.count * gl::get_size(element.type);
-		
-		glVertexArrayVertexBuffer(this->vao, binding_point, this->vbo, 0, vertex_size);
 
-		unsigned offset = 0;
+		size_t offset = 0;
 		for(unsigned i = 0; i < layout.size(); i++) {
 			const auto &element = layout[i];
-
-			glVertexArrayAttribFormat(this->vao, i, element.count, element.type, element.normalized, offset);
-			glVertexArrayAttribBinding(this->vao, i, binding_point);
-			glEnableVertexArrayAttrib(this->vao, i);
-
+			glEnableVertexAttribArray(i);
+			glVertexAttribPointer(i,
+				element.count, element.type, element.normalized,
+				vertex_size,
+				(const void *) offset);
 			offset += element.count * gl::get_size(element.type);
 		}
 	}
 
 	SuperBuffer(
-		const std::span<const INDEX_TYPE> &indices,
-		const gl::Usage index_buffer_mode,
 		const MemoryHolder &vertex,
 		const gl::Usage vertex_buffer_mode,
-		const std::span<const LayoutElement> &layout,
-		const unsigned binding_point) :
-		count(indices.size())
+		const std::span<const LayoutElement> &layout)
 	{
-		glCreateVertexArrays(1, &this->vao);
-		glBindVertexArray(this->vao);
-
-		glCreateBuffers(2, this->buffers);
-		
-		glNamedBufferData(this->ibo, indices.size_bytes(), indices.data(), (unsigned) index_buffer_mode);
-		glVertexArrayElementBuffer(this->vao, this->ibo);
-
-		unsigned vertex_size = 0;
-		for(const auto &element : layout)
-			vertex_size += element.count * gl::get_size(element.type);
-		
-		glNamedBufferData(this->vbo, vertex.size, vertex.data, (unsigned) vertex_buffer_mode);
-		glVertexArrayVertexBuffer(this->vao, binding_point, this->vbo, 0, vertex_size);
-		
-		unsigned offset = 0;
-		for(unsigned i = 0; i < layout.size(); i++) {
-			const auto &element = layout[i];
-
-			glVertexArrayAttribFormat(this->vao, i, element.count, element.type, element.normalized, offset);
-			glVertexArrayAttribBinding(this->vao, i, binding_point);
-			glEnableVertexArrayAttrib(this->vao, i);
-
-			offset += element.count * gl::get_size(element.type);
-		}
+		new(this) SuperBuffer(layout);
+		this->assign_data(vertex, vertex_buffer_mode);
 	}
 
 	SuperBuffer(SuperBuffer &&other) :
-		ibo(other.ibo),
 		vbo(other.vbo),
-		vao(other.vao),
-		count(other.count)
+		vao(other.vao)
 	{
-		other.ibo = 0;
 		other.vbo = 0;
 		other.vao = 0;
 	}
 
 	SuperBuffer &operator=(SuperBuffer &&other) {
 		if(this != &other) {
-			this->ibo = other.ibo;
 			this->vbo = other.vbo;
 			this->vao = other.vao;
-			this->count = other.count;
-
-			other.ibo = 0;
+	
 			other.vbo = 0;
 			other.vao = 0;
 		}
@@ -136,7 +91,7 @@ public:
 
 	~SuperBuffer() {
 		glDeleteVertexArrays(1, &this->vao);
-		glDeleteBuffers(2, this->buffers);
+		glDeleteBuffers(1, &this->vbo);
 	}
 
 
@@ -152,42 +107,14 @@ public:
 			glBufferSubData(GL_ARRAY_BUFFER, 0, vertex.size, vertex.data);
 	}
 
-	void assign_data(const std::span<const INDEX_TYPE> &indices, const gl::Usage ibo_mode = gl::Usage::DYNAMIC_DRAW) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ibo);
-
-		int buffer_size;
-		glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &buffer_size);
-
-		if((int) indices.size_bytes() > buffer_size)
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size_bytes(), indices.data(), (unsigned) ibo_mode);
-		else
-			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size_bytes(), indices.data());
-		
-		this->count = indices.size();
-	}
-
-
-	void draw() const {
+	void bind() const {
 		glBindVertexArray(this->vao);
-		glDrawElements(GL_TRIANGLES, this->count, (unsigned) gl::get_enum<INDEX_TYPE>(), 0);
-	}
-
-	void draw(const int count) const {
-		glBindVertexArray(this->vao);
-		glDrawElements(GL_TRIANGLES, count, (unsigned) gl::get_enum<INDEX_TYPE>(), 0);
 	}
 
 
-//private:
-	union {
-		unsigned buffers[NUM_BUFFERS];
-		struct {
-			unsigned ibo;
-			unsigned vbo;
-		};
-	};
+private:
+	unsigned vbo;
 	unsigned vao;
-	unsigned count;
 };
 
 

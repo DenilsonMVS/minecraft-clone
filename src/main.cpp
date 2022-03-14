@@ -12,6 +12,7 @@
 #include "texture.hpp"
 #include "utils.hpp"
 #include "super_buffer.hpp"
+#include "index_buffer.hpp"
 #include "camera.hpp"
 
 #include "perlin_noise.hpp"
@@ -264,6 +265,14 @@ static const std::array<glm::ivec3, (unsigned char) FaceId::NUM_FACES> relative_
 	{ 0, -1,  0}
 }};
 
+static unsigned hash(const void * const mem, const size_t size) {
+	const unsigned char * const num = (const unsigned char *) mem;
+	unsigned rtn = 0;
+	for(size_t i = 0; i < size; i++)
+		rtn = rtn * 33 + num[i];
+	return rtn;
+}
+
 class Chunk {
 public:
 	Chunk() = default;
@@ -273,7 +282,7 @@ public:
 		drawable(false),
 		need_update(true),
 		position(position),
-		buffer(layout, 0)
+		buffer(layout)
 	{
 		const glm::ivec2 pos2 = {this->position.x, this->position.z};
 		for(int i = 0; i < chunk_size; i++) {
@@ -311,6 +320,7 @@ public:
 	}
 
 	void build_buffer_if_necessary(const Chunks &chunks) {
+		
 		if(this->built_buffer && !this->need_update)
 			return;
 		
@@ -354,7 +364,7 @@ public:
 		if(indices.size() == 0)
 			return;
 		
-		this->buffer.assign_data(std::span(indices), gl::Usage::STATIC_DRAW);
+		new(&this->ibo) IndexBuffer<unsigned>(indices);
 		this->buffer.assign_data(vertices, gl::Usage::STATIC_DRAW);
 		
 		this->need_update = false;
@@ -366,22 +376,9 @@ public:
 	}
 
 	void draw() const {
-		/*if(this->position == glm::ivec3 {-3, -2, -2}) {
-			std::cout << this->position.x << ' ' << this->position.y << ' ' << this->position.z << '\n';
-			std::cout << this->built_buffer << '\n';
-			std::cout << this->drawable << '\n';
-			std::cout << this->need_update << '\n';
-			std::cout << this->buffer.count << '\n';
-		}
-		if(this->position == glm::ivec3 {-2, -2, -2}) {
-			std::cout << this->position.x << ' ' << this->position.y << ' ' << this->position.z << '\n';
-			std::cout << this->built_buffer << '\n';
-			std::cout << this->drawable << '\n';
-			std::cout << this->need_update << '\n';
-			std::cout << this->buffer.count << '\n';
-		}*/
+		this->buffer.bind();
 		if(this->drawable)
-			this->buffer.draw();
+			this->ibo.draw();
 	}
 	
 
@@ -393,7 +390,8 @@ private:
 	bool need_update: 1;
 	BlockId blocks[chunk_size][chunk_size][chunk_size];
 	glm::ivec3 position;
-	SuperBuffer<unsigned> buffer;
+	SuperBuffer buffer;
+	IndexBuffer<unsigned> ibo;
 };
 
 const std::array<LayoutElement, 5> Chunk::layout = {{
@@ -533,16 +531,12 @@ int main() {
 	player.camera.front = {1, 0, 0};
 	player.camera.speed = 10;
 	player.camera.sensitivity = 3;
-	
-	
+
+
 	auto chunks = Chunks(3);
 	chunks.gen_chunks();
 	chunks.update();
-	
-	
-	auto chunk2 = Chunk({-3, -2, -2}, chunks.generator);
-	
-	chunk2.build_buffer_if_necessary(chunks);
+
 
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
@@ -555,9 +549,6 @@ int main() {
 
 	auto u_mvp = program.get_uniform("u_mvp");
 
-
-	
-	
 
 	float last_time = Renderer::get_time();
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
@@ -582,7 +573,6 @@ int main() {
 		u_mvp.set(player.camera.get_view_projection(window.get_dimensions(), 90));
 
 		chunks.draw();
-		chunk2.draw(); //precisa tirar isso daqui
 
 		window.swap_buffers();
 		Renderer::poll_events();
