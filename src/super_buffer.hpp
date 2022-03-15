@@ -6,7 +6,7 @@
 #include <vector>
 
 
-struct MemoryHolder {
+/*struct MemoryHolder {
 	template<typename T, size_t N>
 	MemoryHolder(T (&data)[N]) :
 		data((void *) data),
@@ -19,7 +19,7 @@ struct MemoryHolder {
 
 	void *data;
 	size_t size;
-};
+};*/
 
 struct LayoutElement {
 	unsigned count;
@@ -57,8 +57,9 @@ public:
 		}
 	}
 
+	template<typename T>
 	SuperBuffer(
-		const MemoryHolder &vertex,
+		const std::span<const T> &vertex,
 		const gl::Usage vertex_buffer_mode,
 		const std::span<const LayoutElement> &layout)
 	{
@@ -95,16 +96,17 @@ public:
 	}
 
 
-	void assign_data(const MemoryHolder &vertex, const gl::Usage vbo_mode = gl::Usage::DYNAMIC_DRAW) const {
+	template<typename T>
+	void assign_data(const std::span<const T> &vertex, const gl::Usage vbo_mode = gl::Usage::DYNAMIC_DRAW) const {
 		glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
 		int buffer_size;
 		glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &buffer_size);
 
-		if((int) vertex.size > buffer_size)
-			glBufferData(GL_ARRAY_BUFFER, vertex.size, vertex.data, (unsigned) vbo_mode);
+		if((int) vertex.size_bytes() > buffer_size)
+			glBufferData(GL_ARRAY_BUFFER, vertex.size_bytes(), vertex.data(), (unsigned) vbo_mode);
 		else
-			glBufferSubData(GL_ARRAY_BUFFER, 0, vertex.size, vertex.data);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, vertex.size_bytes(), vertex.data());
 	}
 
 	void bind() const {

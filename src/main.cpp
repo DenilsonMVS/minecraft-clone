@@ -53,6 +53,10 @@ void Player::update(const float d_t, const Window &window) {
 		this->camera.position.y -= this->camera.speed * d_t;
 }
 
+static constexpr unsigned max_num_faces_in_chunk(const unsigned chunk_size) {
+	const unsigned num_blocks = chunk_size * chunk_size * chunk_size / 2; // Num of blocks that maximize the number of faces to be drawn
+	return num_blocks * (unsigned) FaceId::NUM_FACES;
+}
 
 struct Vertex {
 	glm::vec3 position;
@@ -66,8 +70,7 @@ static void build_block_face(
 	const glm::ivec3 &position,
 	BlockId block,
 	const FaceId face,
-	std::vector<Vertex> &vertices,
-	std::vector<unsigned> &indices)
+	std::vector<Vertex> &vertices)
 {
 	constexpr int num_vertices_per_face = 4;
 	static const std::array<std::array<glm::ivec3, num_vertices_per_face>, (unsigned char) FaceId::NUM_FACES> face_positions = {{
@@ -105,18 +108,12 @@ static void build_block_face(
 			0.8};
 		vertices.push_back(vertex);
 	}
-
-	static const std::array<unsigned, 6> indices_base = {{
-		2, 1, 0,
-		2, 3, 1
-	}};
-	const unsigned last_index = indices.size() / indices_base.size() * 4;
-	for(const auto &index : indices_base)
-		indices.push_back(last_index + index);
 }
 
 
 constexpr int chunk_size = 32;
+constexpr unsigned num_indices_per_face = 6;
+constexpr unsigned num_vertices_per_face = 4;
 
 static glm::ivec3 get_chunk_pos_based_on_block_inside(const glm::ivec3 &block_global_pos) {
 	return {
@@ -248,7 +245,7 @@ public:
 	void draw() const;
 	void update();
 
-//private:
+private:
 	std::map<ivec3_key, Chunk> chunks;
 	std::queue<glm::ivec3> chunks_to_generate;
 	WorldGenerator generator;
@@ -265,13 +262,6 @@ static const std::array<glm::ivec3, (unsigned char) FaceId::NUM_FACES> relative_
 	{ 0, -1,  0}
 }};
 
-static unsigned hash(const void * const mem, const size_t size) {
-	const unsigned char * const num = (const unsigned char *) mem;
-	unsigned rtn = 0;
-	for(size_t i = 0; i < size; i++)
-		rtn = rtn * 33 + num[i];
-	return rtn;
-}
 
 class Chunk {
 public:
@@ -282,7 +272,8 @@ public:
 		drawable(false),
 		need_update(true),
 		position(position),
-		buffer(layout)
+		buffer(layout),
+		num_faces(0)
 	{
 		const glm::ivec2 pos2 = {this->position.x, this->position.z};
 		for(int i = 0; i < chunk_size; i++) {
@@ -327,7 +318,6 @@ public:
 		this->built_buffer = true;
 
 		
-		std::vector<unsigned> indices;
 		std::vector<Vertex> vertices;
 
 		for(unsigned i = 0; i < chunk_size; i++) {
@@ -354,21 +344,21 @@ public:
 						
 						const BlockData &near_block = get_block(near_block_id);
 						if(near_block.invisible)
-							build_block_face(block_world_pos, block_id, (FaceId) face_id, vertices, indices);
+							build_block_face(block_world_pos, block_id, (FaceId) face_id, vertices);
 					}
 				}
 			}
 		}
 
 
-		if(indices.size() == 0)
+		if(vertices.size() == 0)
 			return;
 		
-		new(&this->ibo) IndexBuffer<unsigned>(indices);
-		this->buffer.assign_data(vertices, gl::Usage::STATIC_DRAW);
+		this->buffer.assign_data<Vertex>(vertices, gl::Usage::STATIC_DRAW);
 		
 		this->need_update = false;
 		this->drawable = true;
+		this->num_faces = vertices.size() / num_vertices_per_face;
 	}
 
 	void mark_for_update() {
@@ -376,11 +366,27 @@ public:
 	}
 
 	void draw() const {
-		this->buffer.bind();
-		if(this->drawable)
-			this->ibo.draw();
+		if(this->drawable) {
+			this->buffer.bind();
+			ibo.draw(this->num_faces * num_indices_per_face);
+		}
 	}
 	
+	static void intitate_ibo() {
+		constexpr unsigned max_num_faces = max_num_faces_in_chunk(chunk_size);
+		std::array<unsigned, max_num_faces * 6> indices;
+
+		static const std::array<unsigned, 6> indices_base = {{
+			2, 1, 0,
+			2, 3, 1
+		}};
+
+		for(unsigned i = 0; i < max_num_faces; i++)
+			for(unsigned j = 0; j < 6; j++)
+				indices[i * 6 + j] = i * 4 + indices_base[j];
+
+		new(&ibo) IndexBuffer<unsigned>(indices);
+	}
 
 private:
 	static const std::array<LayoutElement, 5> layout;
@@ -390,8 +396,10 @@ private:
 	bool need_update: 1;
 	BlockId blocks[chunk_size][chunk_size][chunk_size];
 	glm::ivec3 position;
+
 	SuperBuffer buffer;
-	IndexBuffer<unsigned> ibo;
+	unsigned num_faces;
+	static IndexBuffer<unsigned> ibo;
 };
 
 const std::array<LayoutElement, 5> Chunk::layout = {{
@@ -401,6 +409,8 @@ const std::array<LayoutElement, 5> Chunk::layout = {{
 	{2, GL_FLOAT, false},
 	{1, GL_FLOAT, false}
 }};
+
+IndexBuffer<unsigned> Chunk::ibo;
 
 
 
@@ -522,6 +532,8 @@ int main() {
 
 	Renderer::enable(gl::Capability::CULL_FACE);
 	Renderer::enable(gl::Capability::DEPTH_TEST);
+
+	Chunk::intitate_ibo();
 
 
 	auto atlas = BlockTextureAtlas();
