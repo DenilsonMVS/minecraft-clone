@@ -17,6 +17,7 @@
 
 #include "perlin_noise.hpp"
 #include "block.hpp"
+#include "block_texture_atlas.hpp"
 
 
 struct Player {
@@ -68,7 +69,7 @@ struct Vertex {
 
 static void build_block_face(
 	const glm::ivec3 &position,
-	BlockId block,
+	const Block::Id block,
 	const FaceId face,
 	std::vector<Vertex> &vertices)
 {
@@ -83,7 +84,7 @@ static void build_block_face(
 	}};
 
 
-	const auto &main_text_position = get_coords(block, face, FaceLayer::MAIN);
+	const auto &main_text_position = Block::get_coords(block, face, FaceLayer::MAIN);
 	const glm::vec2 vbo_main_text_positions[] = {
 		{main_text_position.x_min, main_text_position.y_max},
 		{main_text_position.x_min, main_text_position.y_min},
@@ -91,7 +92,7 @@ static void build_block_face(
 		{main_text_position.x_max, main_text_position.y_min}
 	};
 
-	const auto &sec_text_position = get_coords(block, face, FaceLayer::SECONDARY);
+	const auto &sec_text_position = Block::get_coords(block, face, FaceLayer::SECONDARY);
 	const glm::vec2 vbo_sec_text_positions[] = {
 		{sec_text_position.x_min, sec_text_position.y_max},
 		{sec_text_position.x_min, sec_text_position.y_min},
@@ -235,7 +236,7 @@ class Chunk;
 class Chunks {
 public:
 	Chunks(const int radius);
-	BlockId operator[](const glm::ivec3 &world_pos) const;
+	Block::Id operator[](const glm::ivec3 &world_pos) const;
 
 	Chunk &get_chunk(const glm::ivec3 &chunk_pos);
 	const Chunk &get_chunk(const glm::ivec3 &chunk_pos) const;
@@ -286,27 +287,27 @@ public:
 				
 				int j = 0;
 				for(; j < (block_chunk_height - 3) && j < chunk_size; j++)
-					this->blocks[i][j][k] = BlockId::STONE;
+					this->blocks[i][j][k] = Block::Id::STONE;
 				
 				for(; j < block_chunk_height && j < chunk_size; j++)
-					this->blocks[i][j][k] = BlockId::DIRT;
+					this->blocks[i][j][k] = Block::Id::DIRT;
 				
 				if(block_chunk_height >= 0 && block_chunk_height < chunk_size)
-					this->blocks[i][j++][k] = BlockId::GRASS;
+					this->blocks[i][j++][k] = Block::Id::GRASS;
 				
 				for(; j < chunk_size; j++)
-					this->blocks[i][j][k] = BlockId::AIR;
+					this->blocks[i][j][k] = Block::Id::AIR;
 			}
 		}
 	}
 
-	BlockId operator[](const glm::ivec3 &position) const {
+	Block::Id operator[](const glm::ivec3 &position) const {
 		if(
 			position.x < 0 || position.x >= chunk_size ||
 			position.y < 0 || position.y >= chunk_size ||
 			position.z < 0 || position.z >= chunk_size
 		)
-			return BlockId::NONE;
+			return Block::Id::NONE;
 		return this->blocks[position.x][position.y][position.z];
 	}
 
@@ -326,23 +327,23 @@ public:
 					const glm::ivec3 block_chunk_pos = {i, j, k};
 					const glm::ivec3 block_world_pos = this->position * chunk_size + block_chunk_pos;
 					
-					const BlockId block_id = (*this)[block_chunk_pos];
-					const BlockData &block = get_block(block_id);
+					const Block::Id block_id = (*this)[block_chunk_pos];
+					const Block &block = Block::get_block(block_id);
 					if(block.invisible)
 						continue;
 
 					for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
 						const glm::ivec3 near_block_chunk_pos = block_chunk_pos + relative_pos[(unsigned char) face_id];
-						BlockId near_block_id = (*this)[near_block_chunk_pos];
-						if(near_block_id == BlockId::NONE) {
+						Block::Id near_block_id = (*this)[near_block_chunk_pos];
+						if(near_block_id == Block::Id::NONE) {
 							const glm::ivec3 near_block_global_pos = this->position * chunk_size + near_block_chunk_pos;
 							near_block_id = chunks[near_block_global_pos];
 
-							if(near_block_id == BlockId::NONE)
+							if(near_block_id == Block::Id::NONE)
 								continue;
 						}
 						
-						const BlockData &near_block = get_block(near_block_id);
+						const Block &near_block = Block::get_block(near_block_id);
 						if(near_block.invisible)
 							build_block_face(block_world_pos, block_id, (FaceId) face_id, vertices);
 					}
@@ -394,7 +395,7 @@ private:
 	bool built_buffer: 1;
 	bool drawable: 1;
 	bool need_update: 1;
-	BlockId blocks[chunk_size][chunk_size][chunk_size];
+	Block::Id blocks[chunk_size][chunk_size][chunk_size];
 	glm::ivec3 position;
 
 	SuperBuffer buffer;
@@ -498,12 +499,12 @@ void Chunks::gen_chunks(const int quantity) {
 }
 
 
-BlockId Chunks::operator[](const glm::ivec3 &block_world_pos) const {
+Block::Id Chunks::operator[](const glm::ivec3 &block_world_pos) const {
 	const glm::ivec3 chunk_pos = get_chunk_pos_based_on_block_inside(block_world_pos);
 	
 	const auto it = this->chunks.find(chunk_pos);
 	if(it == this->chunks.end())
-		return BlockId::NONE;
+		return Block::Id::NONE;
 	
 	const glm::ivec3 chunk_block_pos = block_world_pos - chunk_pos * chunk_size;
 	return it->second[chunk_block_pos];

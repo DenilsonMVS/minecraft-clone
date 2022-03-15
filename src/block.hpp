@@ -2,63 +2,29 @@
 #ifndef BLOCK_HPP
 #define BLOCK_HPP
 
-#include "block_faces.hpp"
+#include "block_face.hpp"
 
 
-enum class BlockId : unsigned char {
-	AIR,
-	DIRT,
-	GRASS,
-	STONE,
-	NUM_BLOCKS,
-	NONE
-};
+struct Block {
+	enum class Id : unsigned char {
+		AIR,
+		DIRT,
+		GRASS,
+		STONE,
+		NUM_BLOCKS,
+		NONE
+	};
 
-enum class FaceLayer : unsigned char {
-	MAIN,
-	SECONDARY,
-	NUM_LAYERS,
-	AIR
-};
 
-struct BlockData {
+	static const Block &get_block(const Id id);
+	static const BlockFace &get_block_face(const Id id, const FaceId face, const FaceLayer layer);
+	static const TextureCoords &get_coords(const Id id, const FaceId face, const FaceLayer layer);
+
 	bool invisible: 1;
-	BlockFaceId faces[(unsigned char) FaceId::NUM_FACES][(unsigned char) FaceLayer::NUM_LAYERS];
+	BlockFace::Id faces[(unsigned char) FaceId::NUM_FACES][(unsigned char) FaceLayer::NUM_LAYERS];
+
+	static const Block blocks[(unsigned char) Id::NUM_BLOCKS];
 };
 
-constexpr BlockData blocks[] = {
-	{true, {
-		{BlockFaceId::AIR, BlockFaceId::AIR},
-		{BlockFaceId::AIR, BlockFaceId::AIR},
-		{BlockFaceId::AIR, BlockFaceId::AIR},
-		{BlockFaceId::AIR, BlockFaceId::AIR},
-		{BlockFaceId::AIR, BlockFaceId::AIR},
-		{BlockFaceId::AIR, BlockFaceId::AIR}}},
-	{false, {
-		{BlockFaceId::DIRT, BlockFaceId::AIR},
-		{BlockFaceId::DIRT, BlockFaceId::AIR},
-		{BlockFaceId::DIRT, BlockFaceId::AIR},
-		{BlockFaceId::DIRT, BlockFaceId::AIR},
-		{BlockFaceId::DIRT, BlockFaceId::AIR},
-		{BlockFaceId::DIRT, BlockFaceId::AIR}}},
-	{false, {
-		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE},
-		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE}, 
-		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE}, 
-		{BlockFaceId::DIRT, BlockFaceId::GRASS_SIDE}, 
-		{BlockFaceId::AIR, BlockFaceId::GRASS_TOP}, 
-		{BlockFaceId::DIRT, BlockFaceId::AIR}}},
-	{false, {
-		{BlockFaceId::STONE, BlockFaceId::AIR},
-		{BlockFaceId::STONE, BlockFaceId::AIR},
-		{BlockFaceId::STONE, BlockFaceId::AIR},
-		{BlockFaceId::STONE, BlockFaceId::AIR},
-		{BlockFaceId::STONE, BlockFaceId::AIR},
-		{BlockFaceId::STONE, BlockFaceId::AIR}}}
-};
-
-const BlockData &get_block(const BlockId id);
-const FaceData &get_block_face(const BlockId id, const FaceId face, const FaceLayer layer);
-const TextureCoords &get_coords(const BlockId id, const FaceId face, const FaceLayer layer);
 
 #endif

@@ -6,7 +6,6 @@
 #include <glm/glm.hpp>
 #include <stb/stb_image.h>
 
-#include "block_faces.hpp"
 
 
 BlockTextureAtlas::BlockTextureAtlas() {
@@ -19,9 +18,9 @@ BlockTextureAtlas::BlockTextureAtlas() {
 	auto texture_join = std::unique_ptr<pixel []>(new pixel[width * height]);
 	
 	int image_index = 0;
-	for(unsigned char face_id = 0; face_id < (unsigned char) BlockFaceId::NUM_FACES; face_id++) {
-		const auto file_path = textures_path + block_faces[face_id].source;
-
+	for(unsigned char face_id = 0; face_id < (unsigned char) BlockFace::Id::NUM_FACES; face_id++) {
+		const auto file_path = textures_path + BlockFace::block_faces[face_id].source;;
+		
 		int rtn_width, rtn_height, rtn_channels;
 		pixel *image = (pixel *) stbi_load(file_path.c_str(), &rtn_width, &rtn_height, &rtn_channels, channels);
 		assert(image != nullptr && rtn_width == resolution && rtn_height == resolution && rtn_channels == channels);
@@ -41,3 +40,15 @@ BlockTextureAtlas::BlockTextureAtlas() {
 
 	new(&this->texture) Texture((unsigned char *) texture_join.get(), width, height, channels, Texture::NEAREST);
 }
+
+TextureCoords BlockTextureAtlas::get_texture_coords_of_face(const BlockFace::Id id) {
+	return {
+		(float) ((int) id) * BlockTextureAtlas::resolution / BlockTextureAtlas::width,
+		0.0f,
+		(float) (((int) id) + 1) * BlockTextureAtlas::resolution / BlockTextureAtlas::width,
+		1.0f};
+}
+
+const int BlockTextureAtlas::resolution = 16;
+const int BlockTextureAtlas::width = (unsigned char) BlockFace::Id::NUM_FACES * BlockTextureAtlas::resolution;
+const int BlockTextureAtlas::height = BlockTextureAtlas::resolution;
