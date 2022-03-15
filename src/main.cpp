@@ -18,67 +18,12 @@
 #include "block.hpp"
 #include "block_texture_atlas.hpp"
 #include "player.hpp"
-
+#include "world_generator.hpp"
 
 static constexpr unsigned max_num_faces_in_chunk(const unsigned chunk_size) {
 	const unsigned num_blocks = chunk_size * chunk_size * chunk_size / 2; // Num of blocks that maximize the number of faces to be drawn
 	return num_blocks * (unsigned) FaceId::NUM_FACES;
 }
-
-struct Vertex {
-	glm::vec3 position;
-	glm::vec3 biome_color;
-	glm::vec2 main_text_coord;
-	glm::vec2 sec_text_coord;
-	float bright;
-};
-
-static void build_block_face(
-	const glm::ivec3 &position,
-	const Block::Id block,
-	const FaceId face,
-	std::vector<Vertex> &vertices)
-{
-	constexpr int num_vertices_per_face = 4;
-	static const std::array<std::array<glm::ivec3, num_vertices_per_face>, (unsigned char) FaceId::NUM_FACES> face_positions = {{
-		{{{1, 0, 0}, {1, 1, 0}, {0, 0, 0}, {0, 1, 0}}},
-		{{{0, 0, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 1}}},
-		{{{1, 0, 1}, {1, 1, 1}, {1, 0, 0}, {1, 1, 0}}},
-		{{{0, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 1, 1}}},
-		{{{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {1, 1, 1}}},
-		{{{0, 0, 0}, {0, 0, 1}, {1, 0, 0}, {1, 0, 1}}}
-	}};
-
-
-	const auto &main_text_position = Block::get_coords(block, face, FaceLayer::MAIN);
-	const glm::vec2 vbo_main_text_positions[] = {
-		{main_text_position.x_min, main_text_position.y_max},
-		{main_text_position.x_min, main_text_position.y_min},
-		{main_text_position.x_max, main_text_position.y_max},
-		{main_text_position.x_max, main_text_position.y_min}
-	};
-
-	const auto &sec_text_position = Block::get_coords(block, face, FaceLayer::SECONDARY);
-	const glm::vec2 vbo_sec_text_positions[] = {
-		{sec_text_position.x_min, sec_text_position.y_max},
-		{sec_text_position.x_min, sec_text_position.y_min},
-		{sec_text_position.x_max, sec_text_position.y_max},
-		{sec_text_position.x_max, sec_text_position.y_min}
-	};
-	
-	for(int i = 0; i < num_vertices_per_face; i++) {
-		const Vertex vertex = {
-			position + face_positions[(unsigned char) face][i],
-			{0.1, 0.7, 0.15},
-			vbo_main_text_positions[i],
-			vbo_sec_text_positions[i],
-			0.8};
-		vertices.push_back(vertex);
-	}
-}
-
-
-#include "world_generator.hpp"
 
 
 struct ivec3_key : public glm::ivec3 {
@@ -185,7 +130,7 @@ public:
 		this->built_buffer = true;
 
 		
-		std::vector<Vertex> vertices;
+		std::vector<BlockFaceVertex> vertices;
 
 		for(unsigned i = 0; i < chunk_size; i++) {
 			for(unsigned j = 0; j < chunk_size; j++) {
@@ -211,7 +156,7 @@ public:
 						
 						const Block &near_block = Block::get_block(near_block_id);
 						if(near_block.invisible)
-							build_block_face(block_world_pos, block_id, (FaceId) face_id, vertices);
+							block.append_face_vertices(block_world_pos, (FaceId) face_id, vertices);
 					}
 				}
 			}
@@ -221,7 +166,7 @@ public:
 		if(vertices.size() == 0)
 			return;
 		
-		this->buffer.assign_data<Vertex>(vertices, gl::Usage::STATIC_DRAW);
+		this->buffer.assign_data<BlockFaceVertex>(vertices, gl::Usage::STATIC_DRAW);
 		
 		this->need_update = false;
 		this->drawable = true;

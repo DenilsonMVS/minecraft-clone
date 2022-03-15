@@ -2,7 +2,14 @@
 #ifndef BLOCK_FACE_HPP
 #define BLOCK_FACE_HPP
 
+#include <glm/glm.hpp>
+#include <array>
+
 #include "texture_coords.hpp"
+
+
+static constexpr int num_vertices_per_face = 4;
+static constexpr int num_indices_per_face = 6;
 
 
 enum class FaceId : unsigned char {
@@ -22,7 +29,16 @@ enum class FaceLayer : unsigned char {
 	AIR
 };
 
-struct BlockFace {
+struct BlockFaceVertex {
+	glm::vec3 position;
+	glm::vec3 biome_color;
+	glm::vec2 main_text_coord;
+	glm::vec2 sec_text_coord;
+	float bright;
+};
+
+class BlockFace {
+public:
 	const char *source;
 	TextureCoords coords;
 
@@ -36,7 +52,10 @@ struct BlockFace {
 		NONE
 	};
 
-	static const BlockFace block_faces[(unsigned char) Id::NUM_FACES];
+	static const BlockFace &get_block_face(const Id id);
+
+private:
+	static const std::array<BlockFace, (size_t) Id::NUM_FACES> block_faces;
 };
 
 #endif

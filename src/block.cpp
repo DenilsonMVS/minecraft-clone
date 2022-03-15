@@ -2,9 +2,10 @@
 #include "block.hpp"
 
 #include <cassert>
+#include <iostream>
 
 
-const Block Block::blocks[(unsigned char) Id::NUM_BLOCKS] = {
+const std::array<Block, (size_t) Block::Id::NUM_BLOCKS> Block::blocks = {{
 	{true, {
 		{BlockFace::Id::AIR, BlockFace::Id::AIR},
 		{BlockFace::Id::AIR, BlockFace::Id::AIR},
@@ -33,16 +34,54 @@ const Block Block::blocks[(unsigned char) Id::NUM_BLOCKS] = {
 		{BlockFace::Id::STONE, BlockFace::Id::AIR},
 		{BlockFace::Id::STONE, BlockFace::Id::AIR},
 		{BlockFace::Id::STONE, BlockFace::Id::AIR}}}
-};
+}};
 
-const Block &Block::get_block(const Block::Id id) {
-	assert(id != Block::Id::NONE);
+
+void Block::append_face_vertices(const glm::ivec3 &block_global_position, const FaceId face, std::vector<BlockFaceVertex> &vertices) const {
+	static const std::array<std::array<glm::ivec3, num_vertices_per_face>, (unsigned char) FaceId::NUM_FACES> face_positions = {{
+		{{{1, 0, 0}, {1, 1, 0}, {0, 0, 0}, {0, 1, 0}}},
+		{{{0, 0, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 1}}},
+		{{{1, 0, 1}, {1, 1, 1}, {1, 0, 0}, {1, 1, 0}}},
+		{{{0, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 1, 1}}},
+		{{{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {1, 1, 1}}},
+		{{{0, 0, 0}, {0, 0, 1}, {1, 0, 0}, {1, 0, 1}}}
+	}};
+
+
+	const auto &main_text_position = this->get_block_face(face, FaceLayer::MAIN).coords;
+	const glm::vec2 vbo_main_text_positions[] = {
+		{main_text_position.x_min, main_text_position.y_max},
+		{main_text_position.x_min, main_text_position.y_min},
+		{main_text_position.x_max, main_text_position.y_max},
+		{main_text_position.x_max, main_text_position.y_min}
+	};
+
+	const auto &sec_text_position = this->get_block_face(face, FaceLayer::SECONDARY).coords;
+	const glm::vec2 vbo_sec_text_positions[] = {
+		{sec_text_position.x_min, sec_text_position.y_max},
+		{sec_text_position.x_min, sec_text_position.y_min},
+		{sec_text_position.x_max, sec_text_position.y_max},
+		{sec_text_position.x_max, sec_text_position.y_min}
+	};
+	
+	for(int i = 0; i < num_vertices_per_face; i++) {
+		const BlockFaceVertex vertex = {
+			block_global_position + face_positions[(unsigned char) face][i],
+			{0.1, 0.7, 0.15},
+			vbo_main_text_positions[i],
+			vbo_sec_text_positions[i],
+			0.8};
+		vertices.push_back(vertex);
+	}
+}
+
+const BlockFace &Block::get_block_face(const FaceId face, const FaceLayer layer) const {
+	assert((unsigned char) face < (unsigned char) FaceId::NUM_FACES);
+	assert((unsigned char) layer < (unsigned char) FaceLayer::NUM_LAYERS);
+	return BlockFace::get_block_face(this->faces[(unsigned char) face][(unsigned char) layer]);
+}
+
+const Block &Block::get_block(const Id id) {
+	assert((unsigned char) id < (unsigned char) Id::NUM_BLOCKS);
 	return blocks[(unsigned char) id];
-}
-
-const BlockFace &Block::get_block_face(const Block::Id id, const FaceId face, const FaceLayer layer) {
-	return BlockFace::block_faces[(unsigned char) get_block(id).faces[(unsigned char) face][(unsigned char) layer]];
-}
-const TextureCoords &Block::get_coords(const Block::Id id, const FaceId face, const FaceLayer layer) {
-	return get_block_face(id, face, layer).coords;
 }

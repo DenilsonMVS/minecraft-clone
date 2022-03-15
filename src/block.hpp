@@ -2,10 +2,14 @@
 #ifndef BLOCK_HPP
 #define BLOCK_HPP
 
+#include <vector>
+#include <array>
+
 #include "block_face.hpp"
 
 
-struct Block {
+class Block {
+public:
 	enum class Id : unsigned char {
 		AIR,
 		DIRT,
@@ -15,15 +19,16 @@ struct Block {
 		NONE
 	};
 
-
-	static const Block &get_block(const Id id);
-	static const BlockFace &get_block_face(const Id id, const FaceId face, const FaceLayer layer);
-	static const TextureCoords &get_coords(const Id id, const FaceId face, const FaceLayer layer);
+	void append_face_vertices(const glm::ivec3 &block_global_position, const FaceId face, std::vector<BlockFaceVertex> &vertices) const;
+	const BlockFace &get_block_face(const FaceId face, const FaceLayer layer) const;
 
 	bool invisible: 1;
 	BlockFace::Id faces[(unsigned char) FaceId::NUM_FACES][(unsigned char) FaceLayer::NUM_LAYERS];
 
-	static const Block blocks[(unsigned char) Id::NUM_BLOCKS];
+	static const Block &get_block(const Id id);
+
+private:
+	static const std::array<Block, (size_t) Id::NUM_BLOCKS> blocks;
 };
 
 

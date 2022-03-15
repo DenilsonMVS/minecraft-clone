@@ -19,7 +19,7 @@ BlockTextureAtlas::BlockTextureAtlas() {
 	
 	int image_index = 0;
 	for(unsigned char face_id = 0; face_id < (unsigned char) BlockFace::Id::NUM_FACES; face_id++) {
-		const auto file_path = textures_path + BlockFace::block_faces[face_id].source;;
+		const auto file_path = textures_path + BlockFace::get_block_face((BlockFace::Id) face_id).source;;
 		
 		int rtn_width, rtn_height, rtn_channels;
 		pixel *image = (pixel *) stbi_load(file_path.c_str(), &rtn_width, &rtn_height, &rtn_channels, channels);
