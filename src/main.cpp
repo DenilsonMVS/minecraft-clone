@@ -13,46 +13,12 @@
 #include "utils.hpp"
 #include "super_buffer.hpp"
 #include "index_buffer.hpp"
-#include "camera.hpp"
 
 #include "perlin_noise.hpp"
 #include "block.hpp"
 #include "block_texture_atlas.hpp"
+#include "player.hpp"
 
-
-struct Player {
-	Player() = default;
-	void update(const float d_t, const Window &window);
-
-	Camera camera;
-};
-
-
-void Player::update(const float d_t, const Window &window) {
-
-	this->camera.update(window.get_mouse_pos(), d_t);
-
-
-	const auto facing_zero_y_normalized = glm::normalize(glm::vec3(this->camera.front.x, 0.0f, this->camera.front.z));
-	
-	if(window.get_key_status(gl::Key::W) == gl::KeyStatus::PRESS)
-		this->camera.position += this->camera.speed * facing_zero_y_normalized * d_t;
-	
-	if(window.get_key_status(gl::Key::S) == gl::KeyStatus::PRESS)
-		this->camera.position -= this->camera.speed * facing_zero_y_normalized * d_t;
-	
-	if(window.get_key_status(gl::Key::A) == gl::KeyStatus::PRESS)
-		this->camera.position -= this->camera.speed * glm::normalize(glm::cross(facing_zero_y_normalized, glm::vec3(0.0f, 1.0f, 0.0f))) * d_t;
-
-	if(window.get_key_status(gl::Key::D) == gl::KeyStatus::PRESS)
-		this->camera.position += this->camera.speed * glm::normalize(glm::cross(facing_zero_y_normalized, glm::vec3(0.0f, 1.0f, 0.0f))) * d_t;
-
-	if(window.get_key_status(gl::Key::SPACE) == gl::KeyStatus::PRESS)
-		this->camera.position.y += this->camera.speed * d_t;
-
-	if(window.get_key_status(gl::Key::LEFT_SHIFT) == gl::KeyStatus::PRESS)
-		this->camera.position.y -= this->camera.speed * d_t;
-}
 
 static constexpr unsigned max_num_faces_in_chunk(const unsigned chunk_size) {
 	const unsigned num_blocks = chunk_size * chunk_size * chunk_size / 2; // Num of blocks that maximize the number of faces to be drawn
