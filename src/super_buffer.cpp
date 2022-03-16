@@ -11,17 +11,17 @@ SuperBuffer::SuperBuffer(const std::span<const LayoutElement> &layout) {
 
 	unsigned vertex_size = 0;
 	for(const auto &element : layout)
-		vertex_size += element.count * gl::get_size(element.type);
+		vertex_size += element.count * gl::get_size((unsigned) element.type);
 
 	size_t offset = 0;
 	for(unsigned i = 0; i < layout.size(); i++) {
 		const auto &element = layout[i];
 		glEnableVertexAttribArray(i);
 		glVertexAttribPointer(i,
-			element.count, element.type, element.normalized,
+			element.count, (unsigned) element.type, element.normalized,
 			vertex_size,
 			(const void *) offset);
-		offset += element.count * gl::get_size(element.type);
+		offset += element.count * gl::get_size((unsigned) element.type);
 	}
 }
 

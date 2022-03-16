@@ -10,8 +10,8 @@
 
 struct LayoutElement {
 	unsigned count;
-	unsigned type;
-	unsigned normalized;
+	gl::Type type;
+	bool normalized;
 };
 
 
