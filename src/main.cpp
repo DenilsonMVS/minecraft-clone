@@ -50,8 +50,7 @@ int main() {
 
 
 	auto chunks = Chunks(3);
-	chunks.gen_chunks();
-	chunks.update();
+	
 
 
 	const auto shaders = {
@@ -69,6 +68,9 @@ int main() {
 	float last_time = Renderer::get_time();
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
+		chunks.gen_chunks(1);
+		chunks.update();
+		
 		Renderer::clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
 
 

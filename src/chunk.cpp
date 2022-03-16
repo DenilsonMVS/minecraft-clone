@@ -86,15 +86,13 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 		}
 	}
 
-
+	this->need_update = false;
+	this->num_faces = vertices.size() / num_vertices_per_face;
 	if(vertices.size() == 0)
 		return;
 	
 	this->buffer.assign_data<BlockFaceVertex>(vertices, gl::Usage::STATIC_DRAW);
-	
-	this->need_update = false;
 	this->drawable = true;
-	this->num_faces = vertices.size() / num_vertices_per_face;
 }
 
 void Chunk::mark_for_update() {
