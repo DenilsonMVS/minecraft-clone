@@ -8,7 +8,6 @@
 
 
 Chunk::Chunk(const glm::ivec3 &position, WorldGenerator &generator) :
-	drawable(false),
 	need_update(false),
 	num_faces(0),
 	buffer(BlockFace::block_face_vertex_layout),
@@ -88,11 +87,10 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 
 	this->need_update = false;
 	this->num_faces = vertices.size() / num_vertices_per_face;
-	if(vertices.size() == 0)
+	if(this->num_faces == 0)
 		return;
 	
 	this->buffer.assign_data<BlockFaceVertex>(vertices, gl::Usage::STATIC_DRAW);
-	this->drawable = true;
 }
 
 void Chunk::mark_for_update() {
@@ -100,7 +98,7 @@ void Chunk::mark_for_update() {
 }
 
 void Chunk::draw(const IndexBuffer<unsigned> &ibo) const {
-	if(this->drawable) {
+	if(this->num_faces != 0) {
 		this->buffer.bind();
 		ibo.draw(this->num_faces * num_indices_per_face);
 	}

@@ -34,7 +34,6 @@ public:
 	}
 
 private:
-	bool drawable: 1;
 	bool need_update: 1;
 	unsigned num_faces;
 	SuperBuffer buffer;
