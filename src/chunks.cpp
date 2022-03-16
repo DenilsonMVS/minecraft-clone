@@ -59,20 +59,8 @@ const Chunk &Chunks::get_chunk(const glm::ivec3 &chunk_pos) const {
 }
 
 void Chunks::gen_chunks() {
-	while(!this->chunks_to_generate.empty()) {
-		const auto pos = this->chunks_to_generate.front();
-		this->chunks_to_generate.pop();
-		
-		Chunk &chunk = this->chunks[pos];		
-		new (&chunk) Chunk(pos, this->generator);
-		chunk.mark_for_update();
-		/*for(unsigned char i = 0; i < (unsigned char) FaceId::NUM_FACES; i++) {
-			const glm::ivec3 side_chunk_pos = pos + BlockFace::get_block_relative_position_of_face((FaceId) i);
-			const auto it = this->chunks.find(side_chunk_pos);
-			if(it != this->chunks.end())
-				it->second.mark_for_update();	
-		}*/
-	}
+	while(!this->chunks_to_generate.empty())
+		this->gen_one_chunk();
 }
 
 void Chunks::gen_chunks(const int quantity) {
@@ -80,19 +68,7 @@ void Chunks::gen_chunks(const int quantity) {
 		if(this->chunks_to_generate.empty())
 			return;
 		
-		const auto pos = this->chunks_to_generate.front();
-		this->chunks_to_generate.pop();
-
-		Chunk &chunk = this->chunks[pos];		
-		new (&chunk) Chunk(pos, this->generator);
-		chunk.mark_for_update();
-
-		/*for(unsigned char i = 0; i < (unsigned char) FaceId::NUM_FACES; i++) {
-			const glm::ivec3 side_chunk_pos = pos + BlockFace::get_block_relative_position_of_face((FaceId) i);
-			const auto it = this->chunks.find(side_chunk_pos);
-			if(it != this->chunks.end())
-				it->second.mark_for_update();	
-		}*/
+		this->gen_one_chunk();
 	}
 }
 
@@ -104,6 +80,23 @@ void Chunks::draw(const IndexBuffer<unsigned> &ibo) const {
 void Chunks::update() {
 	for(auto &chunk : this->chunks)
 		chunk.second.build_buffer_if_necessary(*this);
+}
+
+void Chunks::gen_one_chunk() {
+	assert(!this->chunks_to_generate.empty());
+
+	const auto pos = this->chunks_to_generate.front();
+	this->chunks_to_generate.pop();
+
+	Chunk &chunk = this->chunks[pos];
+	new (&chunk) Chunk(pos, this->generator);
+
+	for(unsigned char i = 0; i < (unsigned char) FaceId::NUM_FACES; i++) {
+		const glm::ivec3 side_chunk_pos = pos + BlockFace::get_block_relative_position_of_face((FaceId) i);
+		const auto it = this->chunks.find(side_chunk_pos);
+		if(it != this->chunks.end())
+			it->second.mark_for_update();	
+	}
 }
 
 Chunks::ivec3_key::ivec3_key(const glm::ivec3 &vec) :

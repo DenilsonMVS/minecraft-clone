@@ -26,6 +26,8 @@ public:
 	void update();
 
 private:
+	void gen_one_chunk();
+
 	struct ivec3_key : public glm::ivec3 {
 		ivec3_key(const glm::ivec3 &vec);
 		bool operator<(const ivec3_key &other) const;

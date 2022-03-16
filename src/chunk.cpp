@@ -8,7 +8,7 @@
 
 
 Chunk::Chunk(const glm::ivec3 &position, WorldGenerator &generator) :
-	need_update(false),
+	need_update(true),
 	num_faces(0),
 	buffer(BlockFace::block_face_vertex_layout),
 	position(position)
