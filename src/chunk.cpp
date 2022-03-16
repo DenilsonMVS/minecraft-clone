@@ -90,7 +90,7 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 	if(this->num_faces == 0)
 		return;
 	
-	this->buffer.assign_data<BlockFaceVertex>(vertices, gl::Usage::STATIC_DRAW);
+	this->buffer.assign_data<BlockFaceVertex>(vertices);
 }
 
 void Chunk::mark_for_update() {

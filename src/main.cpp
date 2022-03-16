@@ -43,13 +43,13 @@ int main() {
 	auto atlas = BlockTextureAtlas();
 
 	auto player = Player();
-	player.camera.position = {0, 0, 0};
+	player.camera.position = {2048, 0, 0};
 	player.camera.front = {1, 0, 0};
 	player.camera.speed = 10;
 	player.camera.sensitivity = 3;
 
 
-	auto chunks = Chunks(3);
+	auto chunks = Chunks(3, player.camera.position);
 	
 
 
@@ -69,7 +69,7 @@ int main() {
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
 		chunks.gen_chunks(1);
-		chunks.update();
+		chunks.update(player.camera.position);
 		
 		Renderer::clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
 

@@ -13,7 +13,7 @@
 
 class Chunks {
 public:
-	Chunks(const int radius);
+	Chunks(const int radius, const glm::vec3 &camera_position);
 
 	Block::Id get_block(const glm::ivec3 &block_global_position) const;
 
@@ -23,10 +23,12 @@ public:
 	void gen_chunks();
 	void gen_chunks(const int quantity);
 	void draw(const IndexBuffer<unsigned> &ibo) const;
-	void update();
+	void update(const glm::vec3 &camera_position);
 
 private:
 	void gen_one_chunk();
+	void generate_chunk_generation_queue();
+	void add_chunk_position_to_queue_if_dont_exist(const glm::ivec3 &chunk_pos);
 
 	struct ivec3_key : public glm::ivec3 {
 		ivec3_key(const glm::ivec3 &vec);
@@ -37,6 +39,7 @@ private:
 	std::queue<glm::ivec3> chunks_to_generate;
 	WorldGenerator generator;
 	int radius;	
+	glm::ivec3 last_chunk_position;
 };
 
 #endif

@@ -2,37 +2,11 @@
 #include "chunks.hpp"
 
 
-Chunks::Chunks(const int radius) :
-	radius(radius)
+Chunks::Chunks(const int radius, const glm::vec3 &camera_position) :
+	radius(radius),
+	last_chunk_position(get_chunk_pos_based_on_block_inside(glm::ivec3(camera_position)))
 {
-	if(this->radius >= 0)
-		this->chunks_to_generate.push({0, 0, 0});
-
-	for(int distance = 1; distance <= this->radius; distance++) {
-		for(int i = -distance; i <= distance; i++) {
-			for(int j = -distance; j <= distance; j++) {
-				const glm::ivec3 pos = {i, distance, j};
-				this->chunks_to_generate.push(pos);
-				this->chunks_to_generate.push(-pos);
-			}
-		}
-
-		for(int i = -distance; i <= distance; i++) {
-			for(int j = -distance + 1; j < distance; j++) {
-				const glm::ivec3 pos = {i, j, distance};
-				this->chunks_to_generate.push(pos);
-				this->chunks_to_generate.push(-pos);
-			}
-		}
-
-		for(int i = -distance + 1; i < distance; i++) {
-			for(int j = -distance + 1; j < distance; j++) {
-				const glm::ivec3 pos = {distance, i, j};
-				this->chunks_to_generate.push(pos);
-				this->chunks_to_generate.push(-pos);
-			}
-		}
-	}
+	this->generate_chunk_generation_queue();
 }
 
 Block::Id Chunks::get_block(const glm::ivec3 &block_global_position) const {
@@ -72,12 +46,26 @@ void Chunks::gen_chunks(const int quantity) {
 	}
 }
 
-void Chunks::draw(const IndexBuffer<unsigned> &ibo) const {
-	for(const auto &chunk : this->chunks)
-		chunk.second.draw(ibo);
+static int infinite_norm(const glm::ivec3 &v) {
+	return std::max(std::abs(v[0]), std::max(std::abs(v[1]), std::abs(v[2])));
 }
 
-void Chunks::update() {
+void Chunks::draw(const IndexBuffer<unsigned> &ibo) const {
+	for(const auto &[position, chunk] : this->chunks) {
+		const glm::ivec3 relative_distance = position - this->last_chunk_position;
+		if(infinite_norm(relative_distance) <= this->radius)
+			chunk.draw(ibo);
+	}
+}
+
+void Chunks::update(const glm::vec3 &camera_position) {
+	const glm::ivec3 chunk_position = get_chunk_pos_based_on_block_inside(glm::ivec3(camera_position));
+
+	if(chunk_position != this->last_chunk_position) {
+		this->last_chunk_position = chunk_position;
+		this->generate_chunk_generation_queue();
+	}
+
 	for(auto &chunk : this->chunks)
 		chunk.second.build_buffer_if_necessary(*this);
 }
@@ -107,4 +95,41 @@ bool Chunks::ivec3_key::operator<(const ivec3_key &other) const {
 		if((*this)[i] != other[i])
 			return (*this)[i] < other[i];
 	return false;
+}
+
+void Chunks::generate_chunk_generation_queue() {
+	this->chunks_to_generate = std::queue<glm::ivec3>();
+
+
+	for(int distance = 0; distance <= this->radius; distance++) {
+		for(int i = -distance; i <= distance; i++) {
+			for(int j = -distance; j <= distance; j++) {
+				const glm::ivec3 pos = {i, distance, j};
+				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position + pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position - pos);
+			}
+		}
+
+		for(int i = -distance; i <= distance; i++) {
+			for(int j = -distance + 1; j < distance; j++) {
+				const glm::ivec3 pos = {i, j, distance};
+				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position + pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position - pos);
+			}
+		}
+
+		for(int i = -distance + 1; i < distance; i++) {
+			for(int j = -distance + 1; j < distance; j++) {
+				const glm::ivec3 pos = {distance, i, j};
+				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position + pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position - pos);
+			}
+		}
+	}
+}
+
+void Chunks::add_chunk_position_to_queue_if_dont_exist(const glm::ivec3 &chunk_pos) {
+	const auto it = this->chunks.find(chunk_pos);
+	if(it == this->chunks.end())
+		this->chunks_to_generate.push(chunk_pos);
 }
