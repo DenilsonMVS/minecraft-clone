@@ -11,8 +11,7 @@ Chunk::Chunk(const glm::ivec3 &position, WorldGenerator &generator) :
 	need_update(false),
 	num_faces(0),
 	buffer(BlockFace::block_face_vertex_layout),
-	position(position),
-	blocks(chunk_size)
+	position(position)
 {
 	const glm::ivec2 pos2 = {this->position.x, this->position.z};
 	for(int i = 0; i < chunk_size; i++) {

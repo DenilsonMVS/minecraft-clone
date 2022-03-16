@@ -4,7 +4,6 @@
 
 #include <glm/glm.hpp>
 #include <array>
-#include <vector>
 
 #include "index_buffer.hpp"
 
@@ -42,7 +41,7 @@ public:
 	glm::ivec3 position;
 
 private:
-	std::vector<std::array<std::array<Block::Id, chunk_size>, chunk_size>> blocks;
+	std::array<std::array<std::array<Block::Id, chunk_size>, chunk_size>, chunk_size> blocks;
 
 	static const std::array<LayoutElement, 5> layout;
 };
