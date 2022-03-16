@@ -53,6 +53,7 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 		return;
 	
 	std::vector<BlockFaceVertex> vertices;
+	vertices.reserve(max_faces_in_chunk() * num_vertices_per_face);
 
 	for(unsigned i = 0; i < chunk_size; i++) {
 		for(unsigned j = 0; j < chunk_size; j++) {
