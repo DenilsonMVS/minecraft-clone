@@ -19,7 +19,7 @@ all: $(TARGET)
 release: FLAGS += -DNDEBUG -O3
 release: $(TARGET)
 
-valgrind: FLAGS += -g
+valgrind: FLAGS += -g3
 valgrind: $(TARGET)
 
 

@@ -11,6 +11,7 @@
 
 class WorldGenerator {
 public:
+	WorldGenerator();
 	int get_height(const glm::ivec2 &block_global_pos);
 
 private:

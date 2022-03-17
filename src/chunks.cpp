@@ -1,10 +1,12 @@
 
 #include "chunks.hpp"
 
+#include "utils.hpp"
+
 
 Chunks::Chunks(const int radius, const glm::vec3 &camera_position) :
 	radius(radius),
-	last_chunk_position(get_chunk_pos_based_on_block_inside(glm::ivec3(camera_position)))
+	last_chunk_position(get_chunk_pos_based_on_block_inside(det::to_int(camera_position)))
 {
 	this->generate_chunk_generation_queue();
 }
@@ -59,7 +61,8 @@ void Chunks::draw(const IndexBuffer<unsigned> &ibo) const {
 }
 
 void Chunks::update(const glm::vec3 &camera_position) {
-	const glm::ivec3 chunk_position = get_chunk_pos_based_on_block_inside(glm::ivec3(camera_position));
+	const glm::ivec3 int_pos = det::to_int(camera_position);
+	const glm::ivec3 chunk_position = get_chunk_pos_based_on_block_inside(int_pos);
 
 	if(chunk_position != this->last_chunk_position) {
 		this->last_chunk_position = chunk_position;

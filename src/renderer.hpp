@@ -30,11 +30,16 @@ public:
 	static bool is_enabled(const gl::Capability cap, const int index);
 
 	static double get_time();
+	static float get_scroll();
 
 private:
+	static void scroll_callback(GLFWwindow * const window, const double d_x, const double d_y);
+
 	struct RendererConstructor {
 		RendererConstructor();
 		~RendererConstructor();
+
+		float scroll_accumulator;
 	};
 
 	static RendererConstructor instance;

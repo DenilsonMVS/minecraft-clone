@@ -116,7 +116,9 @@ static void glDebugOutput(
 }
 
 
-Renderer::RendererConstructor::RendererConstructor() {
+Renderer::RendererConstructor::RendererConstructor() :
+    scroll_accumulator(0)
+{
 	det::check(glfwInit(), "Unable to initate glfw.\n");
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -140,6 +142,7 @@ Window Renderer::create_window(const glm::ivec2 dimensions, const char * const t
 	glfwMakeContextCurrent(window.w);
 	
 	glfwSetFramebufferSizeCallback(window.w, framebuffer_size_callback);
+    glfwSetScrollCallback(window.w, scroll_callback);
 
 	det::check(gladLoadGLLoader((GLADloadproc) glfwGetProcAddress), "Unable to initiate glad.\n");
 
@@ -165,8 +168,13 @@ Window Renderer::create_window(const glm::ivec2 dimensions, const char * const t
 	det::check(window.w != nullptr, "Unable to create window.\n");
 	
 	glfwSetFramebufferSizeCallback(window.w, framebuffer_size_callback);
+    glfwSetScrollCallback(window.w, scroll_callback);
 
 	return window;
+}
+
+void Renderer::scroll_callback(GLFWwindow * const window, const double d_x, const double d_y) {
+    Renderer::instance.scroll_accumulator += d_y + d_x;
 }
 
 void Renderer::set_clear_color(const float r, const float g, const float b) {
@@ -221,6 +229,9 @@ double Renderer::get_time() {
     return glfwGetTime();
 }
 
+float Renderer::get_scroll() {
+    return instance.scroll_accumulator;
+}
 
 
 Renderer::RendererConstructor Renderer::instance;

@@ -19,4 +19,12 @@ namespace det {
 		}
 	}
 
+	glm::ivec3 to_int(const glm::vec3 &v) {
+		return glm::ivec3 {
+			std::floor(v.x),
+			std::floor(v.y),
+			std::floor(v.z)
+		};
+	}
+
 }

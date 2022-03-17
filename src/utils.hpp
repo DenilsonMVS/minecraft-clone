@@ -7,7 +7,7 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
+#include <glm/glm.hpp>
 
 
 #ifndef NDEBUG
@@ -21,6 +21,8 @@ void pass_func(const size_t line, const char * const file, const char * const fu
 namespace det {
 
 	void check(const bool status, const char * const message = "");
+
+	glm::ivec3 to_int(const glm::vec3 &v);
 
 }
 

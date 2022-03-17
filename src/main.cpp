@@ -30,9 +30,10 @@ int main() {
 	std::cout << std::fixed << std::setprecision(2);
 	#endif
 
-
+	
 	auto window = Renderer::create_window({800, 600}, "Base");
 	window.set_cursor_mode(gl::CursorMode::DISABLED);
+	
 
 	Renderer::enable(gl::Capability::CULL_FACE);
 	Renderer::enable(gl::Capability::DEPTH_TEST);
@@ -43,14 +44,13 @@ int main() {
 	auto atlas = BlockTextureAtlas();
 
 	auto player = Player();
-	player.camera.position = {2048, 0, 0};
+	player.camera.position = {0, 0, 0};
 	player.camera.front = {1, 0, 0};
 	player.camera.speed = 10;
 	player.camera.sensitivity = 3;
 
 
 	auto chunks = Chunks(3, player.camera.position);
-	
 
 
 	const auto shaders = {
@@ -65,6 +65,7 @@ int main() {
 	auto u_mvp = program.get_uniform("u_mvp");
 
 
+	float last_scroll = Renderer::get_scroll();
 	float last_time = Renderer::get_time();
 	Renderer::set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
@@ -78,13 +79,18 @@ int main() {
 		const float d_t = current_time - last_time;
 		last_time = current_time;
 
+		const float current_scroll = Renderer::get_scroll();
+		const float rotation = current_scroll - last_scroll;
+		last_scroll = current_scroll;
 
+
+		player.camera.speed *= 1 + rotation / 10;
 		player.update(d_t, window);
 
 		#ifndef NDEBUG
-		std::cout << "pos: " << player.camera.position.x << ' ' << player.camera.position.y << ' ' << player.camera.position.z << '\n';
-		const glm::ivec3 int_pos = player.camera.position;
+		const glm::ivec3 int_pos = det::to_int(player.camera.position);
 		const glm::ivec3 chunk_pos = get_chunk_pos_based_on_block_inside(int_pos);
+		std::cout << "pos: " << int_pos.x << ' ' << int_pos.y << ' ' << int_pos.z << '\n';
 		std::cout << "chunk_pos: " << chunk_pos.x << ' ' << chunk_pos.y << ' ' << chunk_pos.z << '\n';
 		#endif
 
