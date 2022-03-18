@@ -10,6 +10,7 @@ struct Player {
 	void update(const float d_t, const Window &window);
 
 	Camera camera;
+	static const float range;
 };
 
 #endif

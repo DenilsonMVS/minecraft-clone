@@ -38,15 +38,6 @@ const std::array<Block, (size_t) Block::Id::NUM_BLOCKS> Block::blocks = {{
 
 
 void Block::append_face_vertices(const glm::ivec3 &block_global_position, const FaceId face, std::vector<BlockFaceVertex> &vertices) const {
-	static const std::array<std::array<glm::ivec3, num_vertices_per_face>, (unsigned char) FaceId::NUM_FACES> face_positions = {{
-		{{{1, 0, 0}, {1, 1, 0}, {0, 0, 0}, {0, 1, 0}}},
-		{{{0, 0, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 1}}},
-		{{{1, 0, 1}, {1, 1, 1}, {1, 0, 0}, {1, 1, 0}}},
-		{{{0, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 1, 1}}},
-		{{{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {1, 1, 1}}},
-		{{{0, 0, 0}, {0, 0, 1}, {1, 0, 0}, {1, 0, 1}}}
-	}};
-
 
 	const auto &main_text_position = this->get_block_face(face, FaceLayer::MAIN).coords;
 	const glm::vec2 vbo_main_text_positions[] = {
@@ -66,7 +57,7 @@ void Block::append_face_vertices(const glm::ivec3 &block_global_position, const 
 	
 	for(int i = 0; i < num_vertices_per_face; i++) {
 		const BlockFaceVertex vertex = {
-			block_global_position + face_positions[(unsigned char) face][i],
+			block_global_position + BlockFace::face_positions_helper_data[(unsigned char) face][i],
 			{0.1, 0.7, 0.15},
 			vbo_main_text_positions[i],
 			vbo_sec_text_positions[i],

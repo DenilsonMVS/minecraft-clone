@@ -8,6 +8,18 @@ Chunks::Chunks(const int radius, const glm::vec3 &camera_position) :
 	radius(radius),
 	last_chunk_position(get_chunk_pos_based_on_block_inside(det::to_int(camera_position)))
 {
+	const auto shaders = {
+		Shader("resources/shaders/main.vert"),
+		Shader("resources/shaders/main.frag")
+	};
+
+	new (&this->program) Program(shaders);
+	
+	const auto u_texture = this->program.get_uniform("u_texture");
+	u_texture.set(0);
+
+	this->u_mvp = this->program.get_uniform("u_mvp");
+
 	this->generate_chunk_generation_queue();
 }
 
@@ -52,11 +64,16 @@ static int infinite_norm(const glm::ivec3 &v) {
 	return std::max(std::abs(v[0]), std::max(std::abs(v[1]), std::abs(v[2])));
 }
 
-void Chunks::draw(const IndexBuffer<unsigned> &ibo) const {
+void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer) const {
+	renderer.disable(gl::Capability::BLEND);
+
+	this->program.bind();
+	this->u_mvp.set(mvp);
+
 	for(const auto &[position, chunk] : this->chunks) {
 		const glm::ivec3 relative_distance = position - this->last_chunk_position;
 		if(infinite_norm(relative_distance) <= this->radius)
-			chunk.draw(ibo);
+			chunk.draw(renderer);
 	}
 }
 
@@ -71,6 +88,40 @@ void Chunks::update(const glm::vec3 &camera_position) {
 
 	for(auto &chunk : this->chunks)
 		chunk.second.build_buffer_if_necessary(*this);
+}
+
+void Chunks::modify_block(const glm::ivec3 &block_global_pos, const Block::Id block_id) {
+	const glm::ivec3 chunk_position = get_chunk_pos_based_on_block_inside(block_global_pos);
+	const glm::ivec3 block_position_inside_chunk = block_global_pos - chunk_position * chunk_size;
+
+	const auto it = this->chunks.find(chunk_position);
+	if(it != this->chunks.end()) {
+		it->second.set_block(block_position_inside_chunk, block_id);
+
+		if(block_position_inside_chunk.x == 0) {
+			const glm::ivec3 side_chunk_pos = chunk_position + BlockFace::get_block_relative_position_of_face(FaceId::WEST);
+			this->mark_chunk_for_update_if_chunk_exist(side_chunk_pos);
+		} else if(block_position_inside_chunk.x == chunk_size - 1) {
+			const glm::ivec3 side_chunk_pos = chunk_position + BlockFace::get_block_relative_position_of_face(FaceId::EAST);
+			this->mark_chunk_for_update_if_chunk_exist(side_chunk_pos);
+		}
+
+		if(block_position_inside_chunk.y == 0) {
+			const glm::ivec3 side_chunk_pos = chunk_position + BlockFace::get_block_relative_position_of_face(FaceId::BOTTOM);
+			this->mark_chunk_for_update_if_chunk_exist(side_chunk_pos);
+		} else if(block_position_inside_chunk.y == chunk_size - 1) {
+			const glm::ivec3 side_chunk_pos = chunk_position + BlockFace::get_block_relative_position_of_face(FaceId::TOP);
+			this->mark_chunk_for_update_if_chunk_exist(side_chunk_pos);
+		}
+
+		if(block_position_inside_chunk.z == 0) {
+			const glm::ivec3 side_chunk_pos = chunk_position + BlockFace::get_block_relative_position_of_face(FaceId::SOUTH);
+			this->mark_chunk_for_update_if_chunk_exist(side_chunk_pos);
+		} else if(block_position_inside_chunk.z == chunk_size - 1) {
+			const glm::ivec3 side_chunk_pos = chunk_position + BlockFace::get_block_relative_position_of_face(FaceId::NORTH);
+			this->mark_chunk_for_update_if_chunk_exist(side_chunk_pos);
+		}
+	}
 }
 
 void Chunks::gen_one_chunk() {
@@ -135,4 +186,10 @@ void Chunks::add_chunk_position_to_queue_if_dont_exist(const glm::ivec3 &chunk_p
 	const auto it = this->chunks.find(chunk_pos);
 	if(it == this->chunks.end())
 		this->chunks_to_generate.push(chunk_pos);
+}
+
+void Chunks::mark_chunk_for_update_if_chunk_exist(const glm::ivec3 &chunk_pos) {
+	const auto it = this->chunks.find(chunk_pos);
+	if(it != this->chunks.end())
+		it->second.mark_for_update();
 }

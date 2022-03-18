@@ -244,6 +244,21 @@ namespace gl {
 		MENU =              348,
 	};
 
+	enum class MouseButton : int {
+		BUTTON_1 = 0,
+		BUTTON_2 = 1,
+		BUTTON_3 = 2,
+		BUTTON_4 = 3,
+		BUTTON_5 = 4,
+		BUTTON_6 = 5,
+		BUTTON_7 = 6,
+		BUTTON_8 = 7,
+		LAST =   BUTTON_8,
+		LEFT =   BUTTON_1,
+		RIGHT =  BUTTON_2,
+		MIDDLE = BUTTON_3
+	};
+
 	enum class KeyStatus : int {
 		RELEASE,
 		PRESS,
@@ -284,6 +299,17 @@ namespace gl {
 		STENCIL_TEST = GL_STENCIL_TEST,
 		TEXTURE_CUBE_MAP_SEAMLESS = GL_TEXTURE_CUBE_MAP_SEAMLESS,
 		PROGRAM_POINT_SIZE = GL_PROGRAM_POINT_SIZE
+	};
+
+	enum class DrawMode : unsigned {
+		POINTS = GL_POINTS,
+		LINES = GL_LINES,
+		LINE_STRIP = GL_LINE_STRIP,
+		LINE_LOOP = GL_LINE_LOOP,
+		TRIANGLES = GL_TRIANGLES,
+		TRIANGLE_STRIP = GL_TRIANGLE_STRIP,
+		TRIANGLE_FAN = GL_TRIANGLE_FAN,
+		QUADS = GL_QUADS
 	};
 }
 

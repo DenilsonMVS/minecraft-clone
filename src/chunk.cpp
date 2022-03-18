@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+
 #include "block_face.hpp"
 #include "chunks.hpp"
 
@@ -46,6 +47,15 @@ Block::Id Chunk::get_block_id(const glm::ivec3 &block_position_in_chunk) const {
 	)
 		return Block::Id::NONE;
 	return this->blocks[block_position_in_chunk.x][block_position_in_chunk.y][block_position_in_chunk.z];
+}
+
+void Chunk::set_block(const glm::ivec3 &block_position_in_chunk, const Block::Id block_id) {
+	assert(block_position_in_chunk.x >= 0 && block_position_in_chunk.x < chunk_size);
+	assert(block_position_in_chunk.y >= 0 && block_position_in_chunk.y < chunk_size);
+	assert(block_position_in_chunk.z >= 0 && block_position_in_chunk.z < chunk_size);
+
+	this->blocks[block_position_in_chunk.x][block_position_in_chunk.y][block_position_in_chunk.z] = block_id;
+	this->mark_for_update();
 }
 
 void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
@@ -97,9 +107,9 @@ void Chunk::mark_for_update() {
 	this->need_update = true;
 }
 
-void Chunk::draw(const IndexBuffer<unsigned> &ibo) const {
+void Chunk::draw(const Renderer &renderer) const {
 	if(this->num_faces != 0) {
 		this->buffer.bind();
-		ibo.draw(this->num_faces * num_indices_per_face);
+		renderer.draw_quads(this->num_faces);
 	}
 }

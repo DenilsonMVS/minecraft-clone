@@ -50,15 +50,16 @@ public:
 		GRASS_SIDE,
 		GRASS_TOP,
 		STONE,
+		SELECTION,
 		NUM_FACES,
 		NONE
 	};
 
 	static const BlockFace &get_block_face(const Id id);
 	static const glm::ivec3 &get_block_relative_position_of_face(const FaceId id);
-	static IndexBuffer<unsigned> gen_index_buffer_to_gen_faces(const unsigned num_faces);
 
 	static const std::array<LayoutElement, 5> block_face_vertex_layout;
+	static const std::array<std::array<glm::ivec3, num_vertices_per_face>, (unsigned char) FaceId::NUM_FACES> face_positions_helper_data;
 
 private:
 	static const std::array<BlockFace, (size_t) Id::NUM_FACES> block_faces;

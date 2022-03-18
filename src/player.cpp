@@ -26,3 +26,5 @@ void Player::update(const float d_t, const Window &window) {
 	if(window.get_key_status(gl::Key::LEFT_SHIFT) == gl::KeyStatus::PRESS)
 		this->camera.position.y -= this->camera.speed * d_t;
 }
+
+const float Player::range = 3;

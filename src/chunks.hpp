@@ -9,6 +9,8 @@
 #include "block.hpp"
 #include "chunk.hpp"
 #include "index_buffer.hpp"
+#include "program.hpp"
+#include "renderer.hpp"
 
 
 class Chunks {
@@ -22,13 +24,16 @@ public:
 
 	void gen_chunks();
 	void gen_chunks(const int quantity);
-	void draw(const IndexBuffer<unsigned> &ibo) const;
+	void draw(const glm::mat4 &mvp, const Renderer &renderer) const;
 	void update(const glm::vec3 &camera_position);
+
+	void modify_block(const glm::ivec3 &block_global_pos, const Block::Id block_id);
 
 private:
 	void gen_one_chunk();
 	void generate_chunk_generation_queue();
 	void add_chunk_position_to_queue_if_dont_exist(const glm::ivec3 &chunk_pos);
+	void mark_chunk_for_update_if_chunk_exist(const glm::ivec3 &chunk_pos);
 
 	struct ivec3_key : public glm::ivec3 {
 		ivec3_key(const glm::ivec3 &vec);
@@ -40,6 +45,9 @@ private:
 	WorldGenerator generator;
 	int radius;	
 	glm::ivec3 last_chunk_position;
+
+	Program program;
+	Uniform u_mvp;
 };
 
 #endif

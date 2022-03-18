@@ -20,5 +20,5 @@ void main() {
 
 	const vec4 join_color = biome_color + (1 - biome_color.a) * main_color;
 
-	pixel_color = v_bright * join_color;
+	pixel_color = vec4(join_color.rgb * v_bright, 1);
 }

@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include "window.hpp"
+#include "index_buffer.hpp"
 
 
 class Renderer {
@@ -32,17 +33,25 @@ public:
 	static double get_time();
 	static float get_scroll();
 
+	void set_max_drawn_quads(const unsigned quantity);
+	void draw_quads(const unsigned quantity, const gl::DrawMode mode = gl::DrawMode::TRIANGLES) const;
+
 private:
-	static void scroll_callback(GLFWwindow * const window, const double d_x, const double d_y);
-
-	struct RendererConstructor {
-		RendererConstructor();
-		~RendererConstructor();
-
-		float scroll_accumulator;
+	struct Initializer {
+		Initializer();
+		~Initializer();
 	};
 
-	static RendererConstructor instance;
+	static void scroll_callback(GLFWwindow * const window, const double d_x, const double d_y);
+
+	static constexpr unsigned num_indices_per_face = 6;
+    static constexpr unsigned num_vertices_per_face = 4;
+	
+	static float scroll_accumulator;
+
+	// Initializer should be first for correct glfw and OpenGl initialization and finalization
+	Initializer initializer_instance;
+	IndexBuffer<unsigned> face_indices;
 };
 
 #endif

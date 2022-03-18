@@ -16,7 +16,8 @@ public:
 		std::is_same<T, unsigned>::value);
 
 
-	IndexBuffer() = default;
+	IndexBuffer() :
+		id(0), count(0) {}
 
 	IndexBuffer(const std::span<const T> &data, const gl::Usage usage = gl::Usage::STATIC_DRAW) :
 		count(data.size())
@@ -38,7 +39,7 @@ public:
 			this->id = other.id;
 			other.id = 0;
 
-			this->cout = other.count;
+			this->count = other.count;
 		}
 		return *this;
 	}
@@ -75,13 +76,14 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->id);
 	}
 
-	void draw(const unsigned count) const {
+	void draw(const unsigned count, const gl::DrawMode mode = gl::DrawMode::TRIANGLES) const {
+		assert(count <= this->count);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->id);
-		glDrawElements(GL_TRIANGLES, count, (unsigned) this->get_type(), 0);
+		glDrawElements((unsigned) mode, count, (unsigned) this->get_type(), 0);
 	}
 
-	void draw() const {
-		this->draw(this->count);
+	void draw(const gl::DrawMode mode = gl::DrawMode::TRIANGLES) const {
+		this->draw(this->count, mode);
 	}
 
 	void reserve(const int minimum_capacity, const gl::Usage usage = gl::Usage::DYNAMIC_DRAW) {

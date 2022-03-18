@@ -2,10 +2,10 @@
 #include "window.hpp"
 
 
-Window::Window(const glm::ivec2 dimensions, const char * const title) :
+Window::Window(const glm::ivec2 &dimensions, const char * const title) :
 	w(glfwCreateWindow(dimensions.x, dimensions.y, title, nullptr, nullptr)) {}
 
-Window::Window(const glm::ivec2 dimensions, const char * const title, const Window &share) :
+Window::Window(const glm::ivec2 &dimensions, const char * const title, const Window &share) :
 	w(glfwCreateWindow(dimensions.x, dimensions.y, title, nullptr, share.w)) {}
 
 void Window::bind() const {
@@ -38,6 +38,10 @@ glm::dvec2 Window::get_mouse_pos() const {
 
 gl::KeyStatus Window::get_key_status(const gl::Key key) const {
 	return (gl::KeyStatus) glfwGetKey(this->w, (int) key);
+}
+
+gl::KeyStatus Window::get_mouse_button_status(const gl::MouseButton button) const {
+	return (gl::KeyStatus) glfwGetMouseButton(this->w, (int) button);
 }
 
 void Window::set_cursor_mode(const gl::CursorMode mode) const {
