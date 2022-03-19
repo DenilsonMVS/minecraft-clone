@@ -29,6 +29,8 @@ public:
 	void mark_for_update();
 	void draw(const Renderer &renderer) const;
 
+	static glm::vec3 offset_to_draw(const glm::ivec3 &block_world_pos, const glm::vec3 &player_pos);
+
 	static constexpr unsigned max_faces_in_chunk() {
 		const unsigned num_blocks = chunk_size * chunk_size * chunk_size / 2; // Num of blocks that maximizes the number of faces
 		return num_blocks * (unsigned) FaceId::NUM_FACES;

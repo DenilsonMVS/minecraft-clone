@@ -3,6 +3,7 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <cassert>
 
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
@@ -12,7 +13,10 @@ Uniform::Uniform() :
 	location(-1) {}
 
 Uniform::Uniform(const int location) :
-	location(location) {}
+	location(location)
+{
+	assert(this->location != -1);
+}
 
 void Uniform::set(const float value) const {
 	glUniform1f(this->location, value);

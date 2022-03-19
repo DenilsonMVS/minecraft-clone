@@ -69,7 +69,6 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 		for(unsigned j = 0; j < chunk_size; j++) {
 			for(unsigned k = 0; k < chunk_size; k++) {
 				const glm::ivec3 block_chunk_pos = {i, j, k};
-				const glm::ivec3 block_world_pos = this->position * chunk_size + block_chunk_pos;
 				
 				const Block::Id block_id = this->get_block_id(block_chunk_pos);
 				const Block &block = Block::get_block(block_id);
@@ -89,7 +88,7 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 					
 					const Block &near_block = Block::get_block(near_block_id);
 					if(near_block.invisible)
-						block.append_face_vertices(block_world_pos, (FaceId) face_id, vertices);
+						block.append_face_vertices(block_chunk_pos, (FaceId) face_id, vertices);
 				}
 			}
 		}
@@ -112,4 +111,11 @@ void Chunk::draw(const Renderer &renderer) const {
 		this->buffer.bind();
 		renderer.draw_quads(this->num_faces);
 	}
+}
+
+glm::vec3 Chunk::offset_to_draw(const glm::ivec3 &block_world_pos, const glm::vec3 &player_pos) {
+	const glm::ivec3 center_chunk_pos = get_chunk_pos_based_on_block_inside(det::to_int(player_pos));
+	const glm::ivec3 block_chunk_pos = get_chunk_pos_based_on_block_inside(block_world_pos);
+	const glm::ivec3 relative_chunk_position = block_chunk_pos - center_chunk_pos;
+	return glm::vec3(relative_chunk_position * chunk_size);
 }

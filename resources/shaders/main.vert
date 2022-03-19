@@ -14,10 +14,11 @@ out vec2 v_sec_text_coord;
 out float v_bright;
 
 uniform mat4 u_mvp;
+uniform vec3 u_offset;
 
 
 void main() {
-	gl_Position = u_mvp * vec4(pos, 1);
+	gl_Position = u_mvp * vec4(pos + u_offset, 1);
 
 	v_biome_color = biome_color;
 	v_main_text_coord = main_text_coord;

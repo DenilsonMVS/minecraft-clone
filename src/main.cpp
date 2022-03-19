@@ -80,7 +80,7 @@ class BlockSelection {
 public:
 	BlockSelection();
 
-	void draw(const glm::ivec3 &block_position, const glm::mat4 &mvp, const Renderer &renderer) const;
+	void draw(const glm::ivec3 &block_position, const glm::mat4 &mvp, const Renderer &renderer, const glm::vec3 &player_pos) const;
 
 private:
 	struct SelectionFaceVertex {
@@ -95,7 +95,7 @@ private:
 	SuperBuffer buffer;
 	Program program;
 	Uniform u_mvp;
-	Uniform u_displacement;
+	Uniform u_offset;
 
 	static const float eps;
 	static const std::array<LayoutElement, 2> layout;
@@ -113,19 +113,24 @@ BlockSelection::BlockSelection() :
 	const auto u_texture = program.get_uniform("u_texture");
 	u_texture.set(0);
 	this->u_mvp = this->program.get_uniform("u_mvp");
-	this->u_displacement = this->program.get_uniform("u_displacement");
+	this->u_offset = this->program.get_uniform("u_offset");
 
 	this->build_buffer();
 }
 
-void BlockSelection::draw(const glm::ivec3 &block_position, const glm::mat4 &mvp, const Renderer &renderer) const {
+void BlockSelection::draw(const glm::ivec3 &block_position, const glm::mat4 &mvp, const Renderer &renderer, const glm::vec3 &player_pos) const {
 	constexpr unsigned num_faces_in_cube = 6;
-	
+
 	renderer.enable(gl::Capability::BLEND);
+
+	const glm::ivec3 center_chunk_pos = get_chunk_pos_based_on_block_inside(det::to_int(player_pos));
+	const glm::ivec3 block_chunk_pos = get_chunk_pos_based_on_block_inside(block_position);
+	const glm::ivec3 relative_chunk_position = block_chunk_pos - center_chunk_pos;
+	const glm::ivec3 block_position_inside_chunk = block_position - block_chunk_pos * chunk_size;
 
 	this->program.bind();
 	this->u_mvp.set(mvp);
-	this->u_displacement.set(glm::vec3(block_position));
+	this->u_offset.set(glm::vec3(relative_chunk_position * chunk_size + block_position_inside_chunk));
 
 	this->buffer.bind();
 	renderer.draw_quads(num_faces_in_cube);
@@ -289,11 +294,11 @@ int main() {
 	auto player = Player();
 	player.camera.position = {0, 0, 0};
 	player.camera.front = {1, 0, 0};
-	player.camera.speed = 10;
+	player.speed = 10;
 	player.camera.sensitivity = 3;
 
 
-	auto chunks = Chunks(3, player.camera.position);
+	auto chunks = Chunks(3, player.position);
 
 
 	float last_scroll = renderer.get_scroll();
@@ -301,11 +306,11 @@ int main() {
 	renderer.set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
 		chunks.gen_chunks(1);
-		chunks.update(player.camera.position);
+		chunks.update(player.position);
 
 		renderer.clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
 
-		const auto ray_location = cast_ray(chunks, player.camera.position, player.camera.front, Player::range);
+		const auto ray_location = cast_ray(chunks, player.position, player.camera.front, Player::range);
 		if(ray_location && window.get_mouse_button_status(gl::MouseButton::LEFT) == gl::KeyStatus::PRESS)	
 			chunks.modify_block(ray_location.value(), Block::Id::AIR);
 
@@ -319,11 +324,11 @@ int main() {
 		last_scroll = current_scroll;
 
 
-		player.camera.speed *= 1 + rotation / 10;
+		player.speed *= 1 + rotation / 10;
 		player.update(d_t, window);
 
 		#ifndef NDEBUG
-		const glm::ivec3 int_pos = det::to_int(player.camera.position);
+		const glm::ivec3 int_pos = det::to_int(player.position);
 		const glm::ivec3 chunk_pos = get_chunk_pos_based_on_block_inside(int_pos);
 		std::cout << "pos: " << int_pos.x << ' ' << int_pos.y << ' ' << int_pos.z << '\n';
 		std::cout << "chunk_pos: " << chunk_pos.x << ' ' << chunk_pos.y << ' ' << chunk_pos.z << '\n';
@@ -331,10 +336,10 @@ int main() {
 
 		const auto mvp = player.camera.get_view_projection(window.get_dimensions(), 90);
 
-		chunks.draw(mvp, renderer);
+		chunks.draw(mvp, renderer, player.position);
 
-		if(ray_location && is_air_block(chunks, det::to_int(player.camera.position)))
-			block_selection.draw(ray_location.value(), mvp, renderer);
+		if(ray_location && is_air_block(chunks, det::to_int(player.position)))
+			block_selection.draw(ray_location.value(), mvp, renderer, player.position);
 		
 		crosshair.draw(window);
 

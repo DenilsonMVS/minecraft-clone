@@ -24,7 +24,7 @@ public:
 
 	void gen_chunks();
 	void gen_chunks(const int quantity);
-	void draw(const glm::mat4 &mvp, const Renderer &renderer) const;
+	void draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::vec3 &player_pos) const;
 	void update(const glm::vec3 &camera_position);
 
 	void modify_block(const glm::ivec3 &block_global_pos, const Block::Id block_id);
@@ -43,11 +43,12 @@ private:
 	std::map<ivec3_key, Chunk> chunks;
 	std::queue<glm::ivec3> chunks_to_generate;
 	WorldGenerator generator;
-	int radius;	
+	int radius;
 	glm::ivec3 last_chunk_position;
 
 	Program program;
 	Uniform u_mvp;
+	Uniform u_offset;
 };
 
 #endif

@@ -19,6 +19,7 @@ Chunks::Chunks(const int radius, const glm::vec3 &camera_position) :
 	u_texture.set(0);
 
 	this->u_mvp = this->program.get_uniform("u_mvp");
+	this->u_offset = this->program.get_uniform("u_offset");
 
 	this->generate_chunk_generation_queue();
 }
@@ -64,16 +65,20 @@ static int infinite_norm(const glm::ivec3 &v) {
 	return std::max(std::abs(v[0]), std::max(std::abs(v[1]), std::abs(v[2])));
 }
 
-void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer) const {
+void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::vec3 &player_pos) const {
+	const glm::ivec3 center_chunk_pos = get_chunk_pos_based_on_block_inside(det::to_int(player_pos));
+	
 	renderer.disable(gl::Capability::BLEND);
 
 	this->program.bind();
 	this->u_mvp.set(mvp);
 
 	for(const auto &[position, chunk] : this->chunks) {
-		const glm::ivec3 relative_distance = position - this->last_chunk_position;
-		if(infinite_norm(relative_distance) <= this->radius)
+		const glm::ivec3 relative_distance = position - center_chunk_pos;
+		if(infinite_norm(relative_distance) <= this->radius) {
+			this->u_offset.set(glm::vec3(relative_distance * chunk_size));
 			chunk.draw(renderer);
+		}
 	}
 }
 

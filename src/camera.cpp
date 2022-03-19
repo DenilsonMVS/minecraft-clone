@@ -2,9 +2,9 @@
 #include "camera.hpp"
 
 
-Camera::Camera(const float sensitivity, const float speed) :
+Camera::Camera(const float sensitivity) :
 	position(0.0f, 0.0f, 0.0f),
-	sensitivity(sensitivity), speed(speed),
+	sensitivity(sensitivity),
 	last_mouse_pos({0, 0}),
 	pitch(0.0f), yaw(0.0f) {
 
