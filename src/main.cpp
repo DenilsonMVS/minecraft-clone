@@ -36,30 +36,41 @@ static unsigned index_of_smaller(const float * const v, const unsigned count) {
 	return smaller;
 }
 
+static bool is_air_block(const Chunks &chunks, const glm::ivec3 &position) {
+	return chunks.get_block(position) == Block::Id::AIR;
+}
+
 static std::optional<glm::ivec3> cast_ray(
 	const Chunks &chunks,
 	const glm::vec3 &position,
 	const glm::vec3 &facing,
 	const float radius)
 {
-	const float step = 0.1;
-	const glm::vec3 step_vec = facing * step;
-	const unsigned num_steps = radius / step;
-	
+	const glm::vec3 next = {
+		facing.x > 0 ? 1 : -1,
+		facing.y > 0 ? 1 : -1,
+		facing.z > 0 ? 1 : -1
+	};
 
 	glm::vec3 current_pos = position;
-	for(unsigned i = 0; i < num_steps; i++) {
-		const glm::ivec3 block_global_pos = det::to_int(current_pos);
-		const auto block_id = chunks.get_block(block_global_pos);
-
+	do {
+		const glm::ivec3 block_pos = det::to_int(current_pos);
+		const auto block_id = chunks.get_block(block_pos);
 		if(block_id != Block::Id::NONE) {
 			const auto &block = Block::get_block(block_id);
 			if(!block.invisible)
-				return block_global_pos;
+				return block_pos;
 		}
-		
-		current_pos += step_vec;
-	}
+
+
+		const glm::vec3 next_pos = glm::vec3(block_pos) + next;
+		const glm::vec3 distance = next_pos - current_pos;
+		const glm::vec3 time = distance / facing;
+
+		const unsigned smaller = index_of_smaller(&time[0], 3);
+		current_pos += facing * time[smaller];
+	
+	} while(glm::length(current_pos - position) < radius);
 
 	return std::nullopt;
 }
@@ -239,7 +250,7 @@ int main() {
 
 		chunks.draw(mvp, renderer);
 
-		if(ray_location)
+		if(ray_location && is_air_block(chunks, det::to_int(player.camera.position)))
 			block_selection.draw(ray_location.value(), mvp, renderer);
 
 
