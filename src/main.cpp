@@ -25,7 +25,8 @@
 #include "chunks.hpp"
 
 
-static unsigned index_of_smaller(const float * const v, const unsigned count) {
+template<typename T>
+static unsigned index_of_smaller(const T * const v, const unsigned count) {
 	assert(v != nullptr);
 	assert(count > 0);
 
@@ -42,13 +43,14 @@ static bool is_air_block(const Chunks &chunks, const glm::ivec3 &position) {
 
 static std::optional<glm::ivec3> cast_ray(
 	const Chunks &chunks,
-	const glm::vec3 &position,
+	const glm::dvec3 &position,
 	const glm::vec3 &facing,
 	const float radius)
 {
-	constexpr float eps = 0.0001;
+	constexpr double eps = 0.01;
+	const glm::dvec3 d_facing = facing;
 
-	glm::vec3 current_pos = position;
+	glm::dvec3 current_pos = position;
 	do {
 		const glm::ivec3 block_pos = det::to_int(current_pos);
 		const auto block_id = chunks.get_block(block_pos);
@@ -59,17 +61,17 @@ static std::optional<glm::ivec3> cast_ray(
 		}
 
 
-		const glm::vec3 block_pos_f = glm::vec3(block_pos);
-		const glm::vec3 distance = {
+		const glm::dvec3 block_pos_f = glm::dvec3(block_pos);
+		const glm::dvec3 distance = {
 			facing.x < 0 ? block_pos_f.x - current_pos.x : 1 - (current_pos.x - block_pos_f.x),
 			facing.y < 0 ? block_pos_f.y - current_pos.y : 1 - (current_pos.y - block_pos_f.y),
 			facing.z < 0 ? block_pos_f.z - current_pos.z : 1 - (current_pos.z - block_pos_f.z)
 		};
-		const glm::vec3 time = distance / facing;
+		const glm::dvec3 time = distance / d_facing;
 
 		const unsigned smaller = index_of_smaller(&time[0], 3);
-		current_pos += facing * (time[smaller] + eps);
-	
+		current_pos += d_facing * (time[smaller] + eps);
+		
 	} while(glm::length(current_pos - position) < radius);
 
 	return std::nullopt;
@@ -80,7 +82,7 @@ class BlockSelection {
 public:
 	BlockSelection();
 
-	void draw(const glm::ivec3 &block_position, const glm::mat4 &mvp, const Renderer &renderer, const glm::vec3 &player_pos) const;
+	void draw(const glm::ivec3 &block_position, const glm::mat4 &mvp, const Renderer &renderer, const glm::dvec3 &player_pos) const;
 
 private:
 	struct SelectionFaceVertex {
@@ -118,7 +120,7 @@ BlockSelection::BlockSelection() :
 	this->build_buffer();
 }
 
-void BlockSelection::draw(const glm::ivec3 &block_position, const glm::mat4 &mvp, const Renderer &renderer, const glm::vec3 &player_pos) const {
+void BlockSelection::draw(const glm::ivec3 &block_position, const glm::mat4 &mvp, const Renderer &renderer, const glm::dvec3 &player_pos) const {
 	constexpr unsigned num_faces_in_cube = 6;
 
 	renderer.enable(gl::Capability::BLEND);

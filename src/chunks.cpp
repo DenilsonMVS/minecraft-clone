@@ -4,9 +4,9 @@
 #include "utils.hpp"
 
 
-Chunks::Chunks(const int radius, const glm::vec3 &camera_position) :
+Chunks::Chunks(const int radius, const glm::dvec3 &player_position) :
 	radius(radius),
-	last_chunk_position(get_chunk_pos_based_on_block_inside(det::to_int(camera_position)))
+	last_chunk_position(get_chunk_pos_based_on_block_inside(det::to_int(player_position)))
 {
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
@@ -65,7 +65,7 @@ static int infinite_norm(const glm::ivec3 &v) {
 	return std::max(std::abs(v[0]), std::max(std::abs(v[1]), std::abs(v[2])));
 }
 
-void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::vec3 &player_pos) const {
+void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::dvec3 &player_pos) const {
 	const glm::ivec3 center_chunk_pos = get_chunk_pos_based_on_block_inside(det::to_int(player_pos));
 	
 	renderer.disable(gl::Capability::BLEND);
@@ -82,8 +82,8 @@ void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::vec
 	}
 }
 
-void Chunks::update(const glm::vec3 &camera_position) {
-	const glm::ivec3 int_pos = det::to_int(camera_position);
+void Chunks::update(const glm::dvec3 &player_position) {
+	const glm::ivec3 int_pos = det::to_int(player_position);
 	const glm::ivec3 chunk_position = get_chunk_pos_based_on_block_inside(int_pos);
 
 	if(chunk_position != this->last_chunk_position) {

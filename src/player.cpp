@@ -33,7 +33,7 @@ void Player::update(const float d_t, const Window &window) {
 		this->position.y -= this->speed * d_t;
 
 	const glm::ivec3 chunk_pos = get_chunk_pos_based_on_block_inside(det::to_int(this->position));
-	this->camera.position = this->position - glm::vec3(chunk_pos * chunk_size);
+	this->camera.position = this->position - glm::dvec3(chunk_pos * chunk_size);
 }
 
 const float Player::range = 3;

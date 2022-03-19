@@ -12,7 +12,7 @@ struct Player {
 	void update(const float d_t, const Window &window);
 
 	Camera camera;
-	glm::vec3 position;
+	glm::dvec3 position;
 	float speed;
 
 	static const float range;

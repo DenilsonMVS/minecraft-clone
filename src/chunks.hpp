@@ -15,7 +15,7 @@
 
 class Chunks {
 public:
-	Chunks(const int radius, const glm::vec3 &camera_position);
+	Chunks(const int radius, const glm::dvec3 &player_position);
 
 	Block::Id get_block(const glm::ivec3 &block_global_position) const;
 
@@ -24,8 +24,8 @@ public:
 
 	void gen_chunks();
 	void gen_chunks(const int quantity);
-	void draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::vec3 &player_pos) const;
-	void update(const glm::vec3 &camera_position);
+	void draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::dvec3 &player_pos) const;
+	void update(const glm::dvec3 &player_position);
 
 	void modify_block(const glm::ivec3 &block_global_pos, const Block::Id block_id);
 
