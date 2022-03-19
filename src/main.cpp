@@ -46,11 +46,7 @@ static std::optional<glm::ivec3> cast_ray(
 	const glm::vec3 &facing,
 	const float radius)
 {
-	const glm::vec3 next = {
-		facing.x > 0 ? 1 : -1,
-		facing.y > 0 ? 1 : -1,
-		facing.z > 0 ? 1 : -1
-	};
+	constexpr float eps = 0.0001;
 
 	glm::vec3 current_pos = position;
 	do {
@@ -63,12 +59,16 @@ static std::optional<glm::ivec3> cast_ray(
 		}
 
 
-		const glm::vec3 next_pos = glm::vec3(block_pos) + next;
-		const glm::vec3 distance = next_pos - current_pos;
+		const glm::vec3 block_pos_f = glm::vec3(block_pos);
+		const glm::vec3 distance = {
+			facing.x < 0 ? block_pos_f.x - current_pos.x : 1 - (current_pos.x - block_pos_f.x),
+			facing.y < 0 ? block_pos_f.y - current_pos.y : 1 - (current_pos.y - block_pos_f.y),
+			facing.z < 0 ? block_pos_f.z - current_pos.z : 1 - (current_pos.z - block_pos_f.z)
+		};
 		const glm::vec3 time = distance / facing;
 
 		const unsigned smaller = index_of_smaller(&time[0], 3);
-		current_pos += facing * time[smaller];
+		current_pos += facing * (time[smaller] + eps);
 	
 	} while(glm::length(current_pos - position) < radius);
 
