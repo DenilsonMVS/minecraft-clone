@@ -30,6 +30,8 @@ public:
 	static bool is_enabled(const gl::Capability cap);
 	static bool is_enabled(const gl::Capability cap, const int index);
 
+	static void set_blend_function(const gl::BlendFunc s, const gl::BlendFunc b);
+
 	static double get_time();
 	static float get_scroll();
 

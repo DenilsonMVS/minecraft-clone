@@ -283,7 +283,7 @@ int main() {
 	renderer.enable(gl::Capability::CULL_FACE);
 	renderer.enable(gl::Capability::DEPTH_TEST);
 	
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	renderer.set_blend_function(gl::BlendFunc::SRC_ALPHA, gl::BlendFunc::ONE_MINUS_SRC_ALPHA);
 
 
 	const auto block_selection = BlockSelection();

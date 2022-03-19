@@ -207,6 +207,10 @@ bool Renderer::is_enabled(const gl::Capability cap, const int index) {
 	return glIsEnabledi((unsigned) cap, index);
 }
 
+void Renderer::set_blend_function(const gl::BlendFunc s, const gl::BlendFunc b) {
+	glBlendFunc((unsigned) s, (unsigned) b);
+}
+
 double Renderer::get_time() {
 	return glfwGetTime();
 }
