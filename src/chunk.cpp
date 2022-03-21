@@ -11,7 +11,9 @@
 Chunk::Chunk(const glm::ivec3 &position, WorldGenerator &generator) :
 	need_update(true),
 	num_faces(0),
-	buffer(BlockFace::block_face_vertex_layout),
+	transparent_faces(0),
+	main_buffer(BlockFace::block_face_vertex_layout),
+	transparent_buffer(BlockFace::transparent_block_face_vertex_layout),
 	position(position)
 {
 	const glm::ivec2 pos2 = {this->position.x, this->position.z};
@@ -33,8 +35,12 @@ Chunk::Chunk(const glm::ivec3 &position, WorldGenerator &generator) :
 			if(block_chunk_height >= 0 && block_chunk_height < chunk_size)
 				this->blocks[i][j++][k] = Block::Id::GRASS;
 			
-			for(; j < chunk_size; j++)
-				this->blocks[i][j][k] = Block::Id::AIR;
+			if(position.y >= 0)
+				for(; j < chunk_size; j++)
+					this->blocks[i][j][k] = Block::Id::AIR;
+			else
+				for(; j < chunk_size; j++)
+					this->blocks[i][j][k] = Block::Id::WATER;
 		}
 	}
 }
@@ -63,6 +69,7 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 		return;
 	
 	std::vector<BlockFaceVertex> vertices;
+	std::vector<TransparentBlockFaceVertex> transparent_vertices;
 	vertices.reserve(max_faces_in_chunk() * num_vertices_per_face);
 
 	for(unsigned i = 0; i < chunk_size; i++) {
@@ -87,29 +94,40 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 					}
 					
 					const Block &near_block = Block::get_block(near_block_id);
-					if(near_block.invisible)
-						block.append_face_vertices(block_chunk_pos, (FaceId) face_id, vertices);
+					if(near_block.transparent && (block_id != near_block_id))
+						block.append_face_vertices(block_chunk_pos, (FaceId) face_id, vertices, transparent_vertices);
 				}
 			}
 		}
 	}
 
 	this->need_update = false;
+
+
 	this->num_faces = vertices.size() / num_vertices_per_face;
-	if(this->num_faces == 0)
-		return;
+	if(this->num_faces != 0)
+		this->main_buffer.assign_data<BlockFaceVertex>(vertices);
 	
-	this->buffer.assign_data<BlockFaceVertex>(vertices);
+	this->transparent_faces = transparent_vertices.size() / num_vertices_per_face;
+	if(this->transparent_faces != 0)
+		this->transparent_buffer.assign_data<TransparentBlockFaceVertex>(transparent_vertices);
 }
 
 void Chunk::mark_for_update() {
 	this->need_update = true;
 }
 
-void Chunk::draw(const Renderer &renderer) const {
+void Chunk::draw_non_transparent(const Renderer &renderer) const {
 	if(this->num_faces != 0) {
-		this->buffer.bind();
+		this->main_buffer.bind();
 		renderer.draw_quads(this->num_faces);
+	}
+}
+
+void Chunk::draw_transparent(const Renderer &renderer) const {
+	if(this->transparent_faces != 0) {
+		this->transparent_buffer.bind();
+		renderer.draw_quads(this->transparent_faces);
 	}
 }
 

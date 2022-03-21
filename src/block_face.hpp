@@ -39,6 +39,12 @@ struct BlockFaceVertex {
 	float bright;
 };
 
+struct TransparentBlockFaceVertex {
+	glm::vec3 position;
+	glm::vec2 text_coord;
+	float bright;
+};
+
 class BlockFace {
 public:
 	const char *source;
@@ -51,6 +57,7 @@ public:
 		GRASS_TOP,
 		STONE,
 		SELECTION,
+		WATER,
 		NUM_FACES,
 		NONE
 	};
@@ -59,6 +66,8 @@ public:
 	static const glm::ivec3 &get_block_relative_position_of_face(const FaceId id);
 
 	static const std::array<LayoutElement, 5> block_face_vertex_layout;
+	static const std::array<LayoutElement, 3> transparent_block_face_vertex_layout;
+
 	static const std::array<std::array<glm::ivec3, num_vertices_per_face>, (unsigned char) FaceId::NUM_FACES> face_positions_helper_data;
 
 private:

@@ -27,7 +27,8 @@ public:
 	void build_buffer_if_necessary(const Chunks &chunks);
 
 	void mark_for_update();
-	void draw(const Renderer &renderer) const;
+	void draw_non_transparent(const Renderer &renderer) const;
+	void draw_transparent(const Renderer &renderer) const;
 
 	static glm::vec3 offset_to_draw(const glm::ivec3 &block_world_pos, const glm::vec3 &player_pos);
 
@@ -39,7 +40,9 @@ public:
 private:
 	bool need_update: 1;
 	unsigned num_faces;
-	SuperBuffer buffer;
+	unsigned transparent_faces;
+	SuperBuffer main_buffer;
+	SuperBuffer transparent_buffer;
 
 public:
 	glm::ivec3 position;

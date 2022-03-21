@@ -11,6 +11,7 @@ class Program {
 public:
 	Program();
 	Program(const std::span<const Shader> &shaders);
+	Program(const std::span<const char * const> &shader_sources);
 
 	Program(Program &&other);
 	Program &operator=(Program &&other);

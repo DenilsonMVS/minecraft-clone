@@ -18,7 +18,6 @@ Program::Program() :
 Program::Program(const std::span<const Shader> &shaders) :
 	id(glCreateProgram())
 {
-
 	for(const auto &shader : shaders)
 		glAttachShader(id, shader.get_id());
 
@@ -41,6 +40,14 @@ Program::Program(const std::span<const Shader> &shaders) :
 	}
 
 	#endif
+}
+
+Program::Program(const std::span<const char * const> &shader_sources) {
+	Shader shaders[shader_sources.size()];
+	for(size_t i = 0; i < shader_sources.size(); i++)
+		new(&shaders[i]) Shader(shader_sources[i]);
+
+	new (this) Program(std::span(shaders, shader_sources.size()));
 }
 
 Program::Program(Program &&other) :

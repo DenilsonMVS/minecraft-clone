@@ -49,6 +49,10 @@ private:
 	Program program;
 	Uniform u_mvp;
 	Uniform u_offset;
+
+	Program transparent_program;
+	Uniform u_transparent_mvp;
+	Uniform u_transparent_offset;
 };
 
 #endif

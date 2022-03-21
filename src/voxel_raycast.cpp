@@ -61,9 +61,10 @@ std::optional<glm::ivec3> cast_ray(
 		const auto block_id = chunks.get_block(block_pos);
 		if(block_id != Block::Id::NONE) {
 			const auto &block = Block::get_block(block_id);
-			if(!block.invisible)
+			if(block.solid)
 				return block_pos;
-		}
+		} else
+			return std::nullopt;
 
 
 		const fixed_vec block_pos_s = block_pos;

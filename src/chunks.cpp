@@ -14,12 +14,27 @@ Chunks::Chunks(const int radius, const glm::dvec3 &player_position) :
 	};
 
 	new (&this->program) Program(shaders);
-	
+
 	const auto u_texture = this->program.get_uniform("u_texture");
 	u_texture.set(0);
 
 	this->u_mvp = this->program.get_uniform("u_mvp");
 	this->u_offset = this->program.get_uniform("u_offset");
+
+
+	const auto transparent_shaders = {
+		Shader("resources/shaders/transparent.vert"),
+		Shader("resources/shaders/transparent.frag")
+	};
+
+	new (&this->transparent_program) Program(transparent_shaders);
+
+	const auto u_transparent_texture = this->transparent_program.get_uniform("u_texture");	
+	u_transparent_texture.set(0);
+
+	this->u_transparent_mvp = this->transparent_program.get_uniform("u_mvp");
+	this->u_transparent_offset = this->transparent_program.get_uniform("u_offset");
+
 
 	this->generate_chunk_generation_queue();
 }
@@ -68,6 +83,7 @@ static int infinite_norm(const glm::ivec3 &v) {
 void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::dvec3 &player_pos) const {
 	const glm::ivec3 center_chunk_pos = get_chunk_pos_based_on_block_inside(det::to_int(player_pos));
 	
+
 	renderer.disable(gl::Capability::BLEND);
 
 	this->program.bind();
@@ -77,7 +93,21 @@ void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::dve
 		const glm::ivec3 relative_distance = position - center_chunk_pos;
 		if(infinite_norm(relative_distance) <= this->radius) {
 			this->u_offset.set(glm::vec3(relative_distance * chunk_size));
-			chunk.draw(renderer);
+			chunk.draw_non_transparent(renderer);
+		}
+	}
+
+
+	renderer.enable(gl::Capability::BLEND);
+
+	this->transparent_program.bind();
+	this->u_transparent_mvp.set(mvp);
+
+	for(const auto &[position, chunk] : this->chunks) {
+		const glm::ivec3 relative_distance = position - center_chunk_pos;
+		if(infinite_norm(relative_distance) <= this->radius) {
+			this->u_transparent_offset.set(glm::vec3(relative_distance * chunk_size));
+			chunk.draw_transparent(renderer);
 		}
 	}
 }

@@ -24,6 +24,12 @@ const std::array<LayoutElement, 5> BlockFace::block_face_vertex_layout = {{
 	{1, gl::get_enum<float>(), false}
 }};
 
+const std::array<LayoutElement, 3> BlockFace::transparent_block_face_vertex_layout = {{
+	{3, gl::get_enum<float>(), false},
+	{2, gl::get_enum<float>(), false},
+	{1, gl::get_enum<float>(), false}
+}};
+
 const std::array<std::array<glm::ivec3, num_vertices_per_face>, (unsigned char) FaceId::NUM_FACES> BlockFace::face_positions_helper_data = {{
 	{{{0, 0, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 1}}},
 	{{{1, 0, 0}, {1, 1, 0}, {0, 0, 0}, {0, 1, 0}}},
@@ -39,7 +45,8 @@ const std::array<BlockFace, (size_t) BlockFace::Id::NUM_FACES> BlockFace::block_
 	{"grass_block_side_overlay.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::GRASS_SIDE)},
 	{"grass_block_top.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::GRASS_TOP)},
 	{"stone.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::STONE)},
-	{"selection.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::SELECTION)}
+	{"selection.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::SELECTION)},
+	{"water.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::WATER)}
 }};
 
 const std::array<glm::ivec3, (unsigned char) FaceId::NUM_FACES> BlockFace::relative_pos = {{

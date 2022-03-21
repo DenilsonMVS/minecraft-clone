@@ -23,7 +23,10 @@ BlockTextureAtlas::BlockTextureAtlas() {
 		
 		int rtn_width, rtn_height, rtn_channels;
 		pixel *image = (pixel *) stbi_load(file_path.c_str(), &rtn_width, &rtn_height, &rtn_channels, channels);
-		assert(image != nullptr && rtn_width == resolution && rtn_height == resolution && rtn_channels == channels);
+		assert(image != nullptr);
+		assert(rtn_width == resolution);
+		assert(rtn_height == resolution);
+		assert(rtn_channels == channels);
 
 		for(int line = 0; line < resolution; line++) {
 			for(int collum = 0; collum < resolution; collum++) {
