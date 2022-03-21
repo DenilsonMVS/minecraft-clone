@@ -10,6 +10,9 @@ void pass_func(const size_t line, const char * const file, const char * const fu
 }
 #endif
 
+
+
+
 namespace det {
 
 	void check(const bool status, const char * const message) {
@@ -19,6 +22,7 @@ namespace det {
 		}
 	}
 
+	
 	glm::ivec3 to_int(const glm::vec3 &v) {
 		return glm::ivec3 {
 			std::floor(v.x),

@@ -7,6 +7,7 @@
 #include <random>
 #include <array>
 #include <optional>
+#include <fixed.hpp>
 
 #include "renderer.hpp"
 #include "program.hpp"
@@ -24,59 +25,12 @@
 #include "chunk.hpp"
 #include "chunks.hpp"
 
+#include "voxel_raycast.hpp"
 
-template<typename T>
-static unsigned index_of_smaller(const T * const v, const unsigned count) {
-	assert(v != nullptr);
-	assert(count > 0);
-
-	unsigned smaller = 0;
-	for(unsigned i = 1; i < count; i++)
-		if(v[i] < v[smaller])
-			smaller = i;
-	return smaller;
-}
 
 static bool is_air_block(const Chunks &chunks, const glm::ivec3 &position) {
 	return chunks.get_block(position) == Block::Id::AIR;
 }
-
-static std::optional<glm::ivec3> cast_ray(
-	const Chunks &chunks,
-	const glm::dvec3 &position,
-	const glm::vec3 &facing,
-	const float radius)
-{
-	constexpr double eps = 0.01;
-	const glm::dvec3 d_facing = facing;
-
-	glm::dvec3 current_pos = position;
-	do {
-		const glm::ivec3 block_pos = det::to_int(current_pos);
-		const auto block_id = chunks.get_block(block_pos);
-		if(block_id != Block::Id::NONE) {
-			const auto &block = Block::get_block(block_id);
-			if(!block.invisible)
-				return block_pos;
-		}
-
-
-		const glm::dvec3 block_pos_f = glm::dvec3(block_pos);
-		const glm::dvec3 distance = {
-			facing.x < 0 ? block_pos_f.x - current_pos.x : 1 - (current_pos.x - block_pos_f.x),
-			facing.y < 0 ? block_pos_f.y - current_pos.y : 1 - (current_pos.y - block_pos_f.y),
-			facing.z < 0 ? block_pos_f.z - current_pos.z : 1 - (current_pos.z - block_pos_f.z)
-		};
-		const glm::dvec3 time = distance / d_facing;
-
-		const unsigned smaller = index_of_smaller(&time[0], 3);
-		current_pos += d_facing * (time[smaller] + eps);
-		
-	} while(glm::length(current_pos - position) < radius);
-
-	return std::nullopt;
-}
-
 
 class BlockSelection {
 public:
