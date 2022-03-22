@@ -94,8 +94,10 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 					}
 					
 					const Block &near_block = Block::get_block(near_block_id);
-					if(near_block.transparent && (block_id != near_block_id))
-						block.append_face_vertices(block_chunk_pos, (FaceId) face_id, vertices, transparent_vertices);
+					if(near_block.transparent && (block_id != near_block_id)) {
+						const DrawableBlock &drawable_block = (const DrawableBlock &) block;
+						drawable_block.append_face_vertices(block_chunk_pos, (FaceId) face_id, vertices, transparent_vertices);
+					}
 				}
 			}
 		}

@@ -6,7 +6,6 @@
 #include <map>
 #include <queue>
 
-#include "block.hpp"
 #include "chunk.hpp"
 #include "index_buffer.hpp"
 #include "program.hpp"

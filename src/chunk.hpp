@@ -8,7 +8,7 @@
 #include "index_buffer.hpp"
 
 #include "world_generator.hpp"
-#include "block.hpp"
+#include "blocks/drawable_block.hpp"
 #include "super_buffer.hpp"
 #include "renderer.hpp"
 
