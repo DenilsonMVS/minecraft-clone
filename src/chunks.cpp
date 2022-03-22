@@ -1,12 +1,22 @@
 
 #include "chunks.hpp"
 
+#include <functional>
+
 #include "utils.hpp"
 
 
+static int infinite_norm(const glm::ivec3 &v) {
+	return std::max(std::abs(v[0]), std::max(std::abs(v[1]), std::abs(v[2])));
+}
+
+static int linear_norm(const glm::ivec3 v) {
+	return std::abs(v[0]) + std::abs(v[1]) + std::abs(v[2]);
+}
+
 Chunks::Chunks(const int radius, const glm::dvec3 &player_position) :
 	radius(radius),
-	last_chunk_position(get_chunk_pos_based_on_block_inside(det::to_int(player_position)))
+	center_chunk_position(get_chunk_pos_based_on_block_inside(det::to_int(player_position)))
 {
 	const auto shaders = {
 		Shader("resources/shaders/main.vert"),
@@ -76,53 +86,50 @@ void Chunks::gen_chunks(const int quantity) {
 	}
 }
 
-static int infinite_norm(const glm::ivec3 &v) {
-	return std::max(std::abs(v[0]), std::max(std::abs(v[1]), std::abs(v[2])));
-}
-
-void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::dvec3 &player_pos) const {
-	const glm::ivec3 center_chunk_pos = get_chunk_pos_based_on_block_inside(det::to_int(player_pos));
-	
-
+void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer) const {
 	renderer.disable(gl::Capability::BLEND);
 
 	this->program.bind();
 	this->u_mvp.set(mvp);
 
-	for(const auto &[position, chunk] : this->chunks) {
-		const glm::ivec3 relative_distance = position - center_chunk_pos;
-		if(infinite_norm(relative_distance) <= this->radius) {
-			this->u_offset.set(glm::vec3(relative_distance * chunk_size));
-			chunk.draw_non_transparent(renderer);
-		}
+	for(const auto &chunk_ptr : this->chunks_to_draw_non_transparent) {
+		const glm::ivec3 relative_distance = chunk_ptr->position - this->center_chunk_position;
+		this->u_offset.set(glm::vec3(relative_distance * chunk_size));
+		chunk_ptr->draw_non_transparent(renderer);
 	}
 
+
+	assert(this->transparent_chunk_mesh_is_sorted());
 
 	renderer.enable(gl::Capability::BLEND);
 
 	this->transparent_program.bind();
 	this->u_transparent_mvp.set(mvp);
 
-	for(const auto &[position, chunk] : this->chunks) {
-		const glm::ivec3 relative_distance = position - center_chunk_pos;
-		if(infinite_norm(relative_distance) <= this->radius) {
-			this->u_transparent_offset.set(glm::vec3(relative_distance * chunk_size));
-			chunk.draw_transparent(renderer);
-		}
+	for(const auto &chunk_ptr : this->chunks_to_draw_transparent) {
+		const glm::ivec3 relative_distance = chunk_ptr->position - this->center_chunk_position;
+		this->u_transparent_offset.set(glm::vec3(relative_distance * chunk_size));
+		chunk_ptr->draw_transparent(renderer);
 	}
 }
 
 void Chunks::update(const glm::dvec3 &player_position) {
 	const glm::ivec3 int_pos = det::to_int(player_position);
 	const glm::ivec3 chunk_position = get_chunk_pos_based_on_block_inside(int_pos);
+	bool need_to_select_chunks_to_draw = false;
 
-	if(chunk_position != this->last_chunk_position) {
-		this->last_chunk_position = chunk_position;
+	if(chunk_position != this->center_chunk_position) {
+		this->center_chunk_position = chunk_position;
 		this->generate_chunk_generation_queue();
+		need_to_select_chunks_to_draw = true;
 	}
 
 	for(auto &chunk : this->chunks)
-		chunk.second.build_buffer_if_necessary(*this);
+		if(chunk.second.build_buffer_if_necessary(*this))
+			need_to_select_chunks_to_draw = true;
+
+	if(need_to_select_chunks_to_draw)
+		this->select_chunks_to_draw();
 }
 
 void Chunks::modify_block(const glm::ivec3 &block_global_pos, const Block::Id block_id) {
@@ -194,24 +201,24 @@ void Chunks::generate_chunk_generation_queue() {
 		for(int i = -distance; i <= distance; i++) {
 			for(int j = -distance; j <= distance; j++) {
 				const glm::ivec3 pos = {i, distance, j};
-				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position + pos);
-				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position - pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->center_chunk_position + pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->center_chunk_position - pos);
 			}
 		}
 
 		for(int i = -distance; i <= distance; i++) {
 			for(int j = -distance + 1; j < distance; j++) {
 				const glm::ivec3 pos = {i, j, distance};
-				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position + pos);
-				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position - pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->center_chunk_position + pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->center_chunk_position - pos);
 			}
 		}
 
 		for(int i = -distance + 1; i < distance; i++) {
 			for(int j = -distance + 1; j < distance; j++) {
 				const glm::ivec3 pos = {distance, i, j};
-				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position + pos);
-				this->add_chunk_position_to_queue_if_dont_exist(this->last_chunk_position - pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->center_chunk_position + pos);
+				this->add_chunk_position_to_queue_if_dont_exist(this->center_chunk_position - pos);
 			}
 		}
 	}
@@ -227,4 +234,43 @@ void Chunks::mark_chunk_for_update_if_chunk_exist(const glm::ivec3 &chunk_pos) {
 	const auto it = this->chunks.find(chunk_pos);
 	if(it != this->chunks.end())
 		it->second.mark_for_update();
+}
+
+void Chunks::select_chunks_to_draw() {
+	this->chunks_to_draw_non_transparent.clear();
+	this->chunks_to_draw_transparent.clear();
+
+	for(const auto &[position, chunk] : this->chunks) {
+		const glm::ivec3 relative_distance = position - this->center_chunk_position;
+		if(infinite_norm(relative_distance) <= this->radius) {
+			if(chunk.can_draw_non_transparent_mesh())
+				this->chunks_to_draw_non_transparent.push_back(&chunk);
+			
+			if(chunk.can_draw_transparent_mesh())
+				this->chunks_to_draw_transparent.push_back(&chunk);
+		}
+	}
+
+	std::sort(
+		this->chunks_to_draw_transparent.begin(),
+		this->chunks_to_draw_transparent.end(),
+		[this](const Chunk *lhs, const Chunk *rhs) {
+			return
+				linear_norm(lhs->position - this->center_chunk_position) >
+				linear_norm(rhs->position - this->center_chunk_position);
+		}
+	);
+}
+
+
+bool Chunks::transparent_chunk_mesh_is_sorted() const {
+	return std::is_sorted(
+		this->chunks_to_draw_transparent.begin(),
+		this->chunks_to_draw_transparent.end(),
+		[this](const Chunk *lhs, const Chunk *rhs) {
+			return
+				linear_norm(lhs->position - this->center_chunk_position) >
+				linear_norm(rhs->position - this->center_chunk_position);
+		}
+	);
 }

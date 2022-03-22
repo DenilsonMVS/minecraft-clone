@@ -46,7 +46,8 @@ const std::array<BlockFace, (size_t) BlockFace::Id::NUM_FACES> BlockFace::block_
 	{"grass_block_top.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::GRASS_TOP)},
 	{"stone.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::STONE)},
 	{"selection.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::SELECTION)},
-	{"water.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::WATER)}
+	{"water.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::WATER)},
+	{"glass.png", BlockTextureAtlas::get_texture_coords_of_face(BlockFace::Id::GLASS)}
 }};
 
 const std::array<glm::ivec3, (unsigned char) FaceId::NUM_FACES> BlockFace::relative_pos = {{

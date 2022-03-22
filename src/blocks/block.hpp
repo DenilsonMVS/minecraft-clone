@@ -13,6 +13,7 @@ public:
 		GRASS,
 		STONE,
 		WATER,
+		GLASS,
 		NUM_BLOCKS,
 		NONE
 	};

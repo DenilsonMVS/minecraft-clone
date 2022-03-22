@@ -64,9 +64,9 @@ void Chunk::set_block(const glm::ivec3 &block_position_in_chunk, const Block::Id
 	this->mark_for_update();
 }
 
-void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
+bool Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 	if(!this->need_update)
-		return;
+		return false;
 	
 	std::vector<BlockFaceVertex> vertices;
 	std::vector<TransparentBlockFaceVertex> transparent_vertices;
@@ -113,6 +113,8 @@ void Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 	this->transparent_faces = transparent_vertices.size() / num_vertices_per_face;
 	if(this->transparent_faces != 0)
 		this->transparent_buffer.assign_data<TransparentBlockFaceVertex>(transparent_vertices);
+	
+	return this->num_faces != 0 || this->transparent_faces != 0;
 }
 
 void Chunk::mark_for_update() {
@@ -131,6 +133,14 @@ void Chunk::draw_transparent(const Renderer &renderer) const {
 		this->transparent_buffer.bind();
 		renderer.draw_quads(this->transparent_faces);
 	}
+}
+
+bool Chunk::can_draw_non_transparent_mesh() const {
+	return this->num_faces != 0;
+}
+
+bool Chunk::can_draw_transparent_mesh() const {
+	return this->transparent_faces != 0;
 }
 
 glm::vec3 Chunk::offset_to_draw(const glm::ivec3 &block_world_pos, const glm::vec3 &player_pos) {

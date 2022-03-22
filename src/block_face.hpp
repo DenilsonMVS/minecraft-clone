@@ -58,6 +58,7 @@ public:
 		STONE,
 		SELECTION,
 		WATER,
+		GLASS,
 		NUM_FACES,
 		NONE
 	};

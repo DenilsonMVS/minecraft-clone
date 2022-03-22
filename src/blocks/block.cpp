@@ -15,6 +15,7 @@ const Block &Block::get_block(const Block::Id id) {
 #include "simple_block.hpp"
 #include "different_biome_face_block.hpp"
 #include "water.hpp"
+#include "simple_transparent.hpp"
 
 static const auto air = Block(true, true, false);
 static const auto dirt = SimpleBlock(BlockFace::Id::DIRT);
@@ -34,11 +35,13 @@ static const auto grass = DifferentBiomeFaceBlock(
 );
 static const auto stone = SimpleBlock(BlockFace::Id::STONE);
 static const auto water = Water();
+static const auto glass = SimpleTransparent(BlockFace::Id::GLASS);
 
 const std::array<const Block *, (size_t) Block::Id::NUM_BLOCKS> Block::blocks = {{
 	&air,
 	&dirt,
 	&grass,
 	&stone,
-	&water
+	&water,
+	&glass
 }};

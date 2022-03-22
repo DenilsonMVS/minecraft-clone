@@ -23,7 +23,7 @@ public:
 
 	void gen_chunks();
 	void gen_chunks(const int quantity);
-	void draw(const glm::mat4 &mvp, const Renderer &renderer, const glm::dvec3 &player_pos) const;
+	void draw(const glm::mat4 &mvp, const Renderer &renderer) const;
 	void update(const glm::dvec3 &player_position);
 
 	void modify_block(const glm::ivec3 &block_global_pos, const Block::Id block_id);
@@ -33,6 +33,10 @@ private:
 	void generate_chunk_generation_queue();
 	void add_chunk_position_to_queue_if_dont_exist(const glm::ivec3 &chunk_pos);
 	void mark_chunk_for_update_if_chunk_exist(const glm::ivec3 &chunk_pos);
+	void select_chunks_to_draw();
+
+	bool transparent_chunk_mesh_is_sorted() const;
+
 
 	struct ivec3_key : public glm::ivec3 {
 		ivec3_key(const glm::ivec3 &vec);
@@ -40,10 +44,13 @@ private:
 	};
 
 	std::map<ivec3_key, Chunk> chunks;
-	std::queue<glm::ivec3> chunks_to_generate;
 	WorldGenerator generator;
 	int radius;
-	glm::ivec3 last_chunk_position;
+	glm::ivec3 center_chunk_position;
+
+	std::queue<glm::ivec3> chunks_to_generate;
+	std::vector<const Chunk *> chunks_to_draw_non_transparent;
+	std::vector<const Chunk *> chunks_to_draw_transparent;
 
 	Program program;
 	Uniform u_mvp;

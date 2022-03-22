@@ -6,7 +6,7 @@ DrawableBlock::DrawableBlock(const bool transparent, const bool solid) :
 	Block(false, transparent, solid) {}
 
 void DrawableBlock::build_non_transparent(
-	const glm::ivec3 &block_global_position,
+	const glm::ivec3 &block_position,
 	const FaceId face,
 	const TextureCoords &main_coords,
 	const TextureCoords &secondary_coords,
@@ -28,7 +28,7 @@ void DrawableBlock::build_non_transparent(
 	
 	for(int i = 0; i < num_vertices_per_face; i++) {
 		const BlockFaceVertex vertex = {
-			block_global_position + BlockFace::face_positions_helper_data[(unsigned char) face][i],
+			block_position + BlockFace::face_positions_helper_data[(unsigned char) face][i],
 			{0.1, 0.7, 0.15},
 			vbo_main_text_positions[i],
 			vbo_sec_text_positions[i],

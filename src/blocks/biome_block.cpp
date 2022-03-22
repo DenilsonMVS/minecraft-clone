@@ -9,10 +9,10 @@ BiomeBlock::BiomeBlock(const BlockFace::Id main_face, const BlockFace::Id second
 
 
 void BiomeBlock::append_face_vertices(
-	const glm::ivec3 &block_global_position,
+	const glm::ivec3 &block_position,
 	const FaceId face,
 	std::vector<BlockFaceVertex> &vertices,
 	std::vector<TransparentBlockFaceVertex> &transparent_vertices) const
 {
-	this->build_non_transparent(block_global_position, face, this->main_face->coords, this->secondary_face->coords, vertices);
+	this->build_non_transparent(block_position, face, this->main_face->coords, this->secondary_face->coords, vertices);
 }

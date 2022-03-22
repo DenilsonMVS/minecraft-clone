@@ -58,16 +58,7 @@ int main() {
 	float last_time = renderer.get_time();
 	renderer.set_clear_color(0.1, 0.05, 0.25);
 	while(!window.should_close() && !(window.get_key_status(gl::Key::ESCAPE) == gl::KeyStatus::PRESS)) {
-		chunks.gen_chunks(1);
-		chunks.update(player.position);
-
-		renderer.clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
-
-		const auto ray_location = cast_ray(chunks, player.position, player.camera.front, Player::range);
-		if(ray_location && window.get_mouse_button_status(gl::MouseButton::LEFT) == gl::KeyStatus::PRESS)	
-			chunks.modify_block(ray_location.value(), Block::Id::AIR);
-
-
+		
 		const float current_time = renderer.get_time();
 		const float d_t = current_time - last_time;
 		last_time = current_time;
@@ -79,6 +70,27 @@ int main() {
 
 		player.speed *= 1 + rotation / 10;
 		player.update(d_t, window);
+		
+		chunks.gen_chunks(1);
+
+		const auto ray_location = cast_ray(chunks, player.position, player.camera.front, Player::range);
+		if(ray_location) {
+			if(window.get_mouse_button_status(gl::MouseButton::LEFT) == gl::KeyStatus::PRESS)
+				chunks.modify_block(ray_location.value().back(), Block::Id::AIR);
+			
+			if(window.get_mouse_button_status(gl::MouseButton::RIGHT) == gl::KeyStatus::PRESS) {
+				if(ray_location.value().size() >= 2) {
+					const glm::ivec3 &position_to_place_block = ray_location.value()[ray_location.value().size() - 2];
+					if(position_to_place_block != det::to_int(player.position))
+						chunks.modify_block(position_to_place_block, Block::Id::GLASS);
+				}
+			}
+		}
+		
+		chunks.update(player.position);
+		
+
+		renderer.clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
 
 		#ifndef NDEBUG
 		const glm::ivec3 int_pos = det::to_int(player.position);
@@ -89,10 +101,10 @@ int main() {
 
 		const auto mvp = player.camera.get_view_projection(window.get_dimensions(), 90);
 
-		chunks.draw(mvp, renderer, player.position);
+		chunks.draw(mvp, renderer);
 
 		if(ray_location && !is_solid_block(chunks, det::to_int(player.position)))
-			block_selection.draw(ray_location.value(), mvp, renderer, player.position);
+			block_selection.draw(ray_location.value().back(), mvp, renderer, player.position);
 		
 		crosshair.draw(window);
 

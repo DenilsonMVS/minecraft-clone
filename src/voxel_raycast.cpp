@@ -43,7 +43,7 @@ static glm::dvec3 to_double(const fixed_vec &v) {
 	};
 }
 
-std::optional<glm::ivec3> cast_ray(
+std::optional<std::vector<glm::ivec3>> cast_ray(
 	const Chunks &chunks,
 	const glm::dvec3 &start,
 	const glm::vec3 &facing,
@@ -54,17 +54,19 @@ std::optional<glm::ivec3> cast_ray(
 	const fixed_vec f_position = start;
 	const fixed_vec f_facing = facing;
 	
+	std::vector<glm::ivec3> blocks_passed;
 	fixed_vec current_pos = f_position;
 	do {
 		const glm::ivec3 block_pos = to_int(current_pos);
+		blocks_passed.push_back(block_pos);
 
 		const auto block_id = chunks.get_block(block_pos);
 		if(block_id != Block::Id::NONE) {
 			const auto &block = Block::get_block(block_id);
 			if(block.solid)
-				return block_pos;
+				return blocks_passed;
 		} else
-			return std::nullopt;
+			std::nullopt;
 
 
 		const fixed_vec block_pos_s = block_pos;

@@ -24,11 +24,14 @@ public:
 
 	Block::Id get_block_id(const glm::ivec3 &block_position_in_chunk) const;
 	void set_block(const glm::ivec3 &block_position_in_chunk, const Block::Id block_id);
-	void build_buffer_if_necessary(const Chunks &chunks);
+	bool build_buffer_if_necessary(const Chunks &chunks);
 
 	void mark_for_update();
 	void draw_non_transparent(const Renderer &renderer) const;
 	void draw_transparent(const Renderer &renderer) const;
+
+	bool can_draw_non_transparent_mesh() const;
+	bool can_draw_transparent_mesh() const;
 
 	static glm::vec3 offset_to_draw(const glm::ivec3 &block_world_pos, const glm::vec3 &player_pos);
 

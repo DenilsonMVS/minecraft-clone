@@ -1,15 +1,15 @@
 
-#ifndef WATER_HPP
-#define WATER_HPP
+#ifndef SIMPLE_TRANSPARENT_HPP
+#define SIMPLE_TRANSPARENT_HPP
 
-#include "drawable_block.hpp"
+#include "transparent_drawable_block.hpp"
 
 
-class Water : public DrawableBlock {
+class SimpleTransparent : public TransparentDrawableBlock {
 public:
-	Water();
+	SimpleTransparent(const BlockFace::Id face);
 
-	virtual void append_face_vertices(
+	void append_face_vertices(
 		const glm::ivec3 &block_position,
 		const FaceId face,
 		std::vector<BlockFaceVertex> &vertices,
