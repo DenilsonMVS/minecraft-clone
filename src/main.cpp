@@ -101,8 +101,9 @@ int main() {
 
 		const auto mvp = player.camera.get_view_projection(window.get_dimensions(), 90);
 
-		chunks.draw(mvp, renderer);
+		chunks.draw(mvp, renderer, atlas.texture);
 
+		atlas.texture.bind(0);
 		if(ray_location && !is_solid_block(chunks, det::to_int(player.position)))
 			block_selection.draw(ray_location.value().back(), mvp, renderer, player.position);
 		

@@ -67,10 +67,11 @@ void Chunk::set_block(const glm::ivec3 &block_position_in_chunk, const Block::Id
 bool Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 	if(!this->need_update)
 		return false;
-	
+	this->need_update = false;
+
 	std::vector<BlockFaceVertex> vertices;
-	std::vector<TransparentBlockFaceVertex> transparent_vertices;
 	vertices.reserve(max_faces_in_chunk() * num_vertices_per_face);
+	std::vector<TransparentBlockFaceVertex> transparent_vertices;
 
 	for(unsigned i = 0; i < chunk_size; i++) {
 		for(unsigned j = 0; j < chunk_size; j++) {
@@ -103,8 +104,6 @@ bool Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 		}
 	}
 
-	this->need_update = false;
-
 
 	this->num_faces = vertices.size() / num_vertices_per_face;
 	if(this->num_faces != 0)
@@ -116,6 +115,140 @@ bool Chunk::build_buffer_if_necessary(const Chunks &chunks) {
 	
 	return this->num_faces != 0 || this->transparent_faces != 0;
 }
+
+/*bool Chunk::build_only_non_transparent_buffer(const Chunks &chunks) {
+	if(!this->need_update)
+		return false;
+	this->need_update = false;
+
+	std::vector<BlockFaceVertex> vertices;
+	vertices.reserve(max_faces_in_chunk() * num_vertices_per_face);
+	std::vector<TransparentBlockFaceVertex> transparent_vertices;
+
+	for(unsigned i = 0; i < chunk_size; i++) {
+		for(unsigned j = 0; j < chunk_size; j++) {
+			for(unsigned k = 0; k < chunk_size; k++) {
+				const glm::ivec3 block_chunk_pos = {i, j, k};
+				
+				const Block::Id block_id = this->get_block_id(block_chunk_pos);
+				const Block &block = Block::get_block(block_id);
+				if(block.transparent)
+					continue;
+
+				for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
+					const glm::ivec3 near_block_chunk_pos = block_chunk_pos + BlockFace::get_block_relative_position_of_face((FaceId) face_id);
+					Block::Id near_block_id = this->get_block_id(near_block_chunk_pos);
+					if(near_block_id == Block::Id::NONE) {
+						const glm::ivec3 near_block_global_pos = this->position * chunk_size + near_block_chunk_pos;
+						near_block_id = chunks.get_block(near_block_global_pos);
+
+						if(near_block_id == Block::Id::NONE)
+							continue;
+					}
+					
+					const Block &near_block = Block::get_block(near_block_id);
+					if(near_block.transparent) {
+						const DrawableBlock &drawable_block = (const DrawableBlock &) block;
+						drawable_block.append_face_vertices(block_chunk_pos, (FaceId) face_id, vertices, transparent_vertices);
+					}
+				}
+			}
+		}
+	}
+
+	this->num_faces = vertices.size() / num_vertices_per_face;
+	if(this->num_faces != 0)
+		this->main_buffer.assign_data<BlockFaceVertex>(vertices);
+	
+	return this->num_faces != 0;
+}
+
+bool Chunk::transparent_buffer_sort(const Chunks &chunks, const glm::ivec3 &central_block) {
+
+	std::array<glm::ivec3, chunk_size * chunk_size * chunk_size> transparent_block_positions;
+	size_t num_blocks = 0;
+
+	for(unsigned i = 0; i < chunk_size; i++) {
+		for(unsigned j = 0; j < chunk_size; j++) {
+			for(unsigned k = 0; k < chunk_size; k++) {
+				const glm::ivec3 block_chunk_pos = {i, j, k};
+
+				const Block::Id block_id = this->get_block_id(block_chunk_pos);
+				const Block &block = Block::get_block(block_id);
+				if(block.invisible)
+					continue;
+				
+				for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
+					const glm::ivec3 near_block_chunk_pos = block_chunk_pos + BlockFace::get_block_relative_position_of_face((FaceId) face_id);
+					Block::Id near_block_id = this->get_block_id(near_block_chunk_pos);
+					if(near_block_id == Block::Id::NONE) {
+						const glm::ivec3 near_block_global_pos = this->position * chunk_size + near_block_chunk_pos;
+						near_block_id = chunks.get_block(near_block_global_pos);
+
+						if(near_block_id == Block::Id::NONE)
+							continue;
+					}
+					
+					const Block &near_block = Block::get_block(near_block_id);
+					if(near_block.transparent && (block_id != near_block_id)) {
+						transparent_block_positions[num_blocks++] = block_chunk_pos;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+
+	std::sort(
+		&transparent_block_positions[0],
+		&transparent_block_positions[1],
+		[&central_block](const glm::ivec3 &lhs, const glm::ivec3 &rhs) {
+			return
+				det::linear_norm(lhs - central_block) <
+				det::linear_norm(rhs - central_block);
+		});
+
+
+	std::vector<BlockFaceVertex> vertices;
+	std::vector<TransparentBlockFaceVertex> transparent_vertices;
+	transparent_vertices.reserve(num_blocks * (size_t) FaceId::NUM_FACES);
+
+	for(size_t i = 0; i < num_blocks; i++) {
+		const glm::ivec3 block_chunk_pos = transparent_block_positions[i];
+				
+		const Block::Id block_id = this->get_block_id(block_chunk_pos);
+		const Block &block = Block::get_block(block_id);
+		if(block.invisible)
+			continue;
+
+		for(unsigned char face_id = 0; face_id < (unsigned char) FaceId::NUM_FACES; face_id++) {
+			const glm::ivec3 near_block_chunk_pos = block_chunk_pos + BlockFace::get_block_relative_position_of_face((FaceId) face_id);
+			Block::Id near_block_id = this->get_block_id(near_block_chunk_pos);
+			if(near_block_id == Block::Id::NONE) {
+				const glm::ivec3 near_block_global_pos = this->position * chunk_size + near_block_chunk_pos;
+				near_block_id = chunks.get_block(near_block_global_pos);
+
+				if(near_block_id == Block::Id::NONE)
+					continue;
+			}
+			
+			const Block &near_block = Block::get_block(near_block_id);
+			if(near_block.transparent && (block_id != near_block_id)) {
+				const DrawableBlock &drawable_block = (const DrawableBlock &) block;
+				drawable_block.append_face_vertices(block_chunk_pos, (FaceId) face_id, vertices, transparent_vertices);
+			}
+		}
+	}
+
+
+	this->transparent_faces = transparent_vertices.size() / num_vertices_per_face;
+	if(this->transparent_faces != 0) {
+		this->transparent_buffer.assign_data<TransparentBlockFaceVertex>(transparent_vertices);
+		return true;
+	} else
+		return false;
+}*/
 
 void Chunk::mark_for_update() {
 	this->need_update = true;

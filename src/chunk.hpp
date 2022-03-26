@@ -6,6 +6,7 @@
 #include <array>
 
 #include "index_buffer.hpp"
+#include "framebuffer.hpp"
 
 #include "world_generator.hpp"
 #include "blocks/drawable_block.hpp"
@@ -25,6 +26,8 @@ public:
 	Block::Id get_block_id(const glm::ivec3 &block_position_in_chunk) const;
 	void set_block(const glm::ivec3 &block_position_in_chunk, const Block::Id block_id);
 	bool build_buffer_if_necessary(const Chunks &chunks);
+	//bool build_only_non_transparent_buffer(const Chunks &chunks);
+	//bool transparent_buffer_sort(const Chunks &chunks, const glm::ivec3 &central_block);
 
 	void mark_for_update();
 	void draw_non_transparent(const Renderer &renderer) const;

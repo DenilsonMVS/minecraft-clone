@@ -39,4 +39,12 @@ namespace det {
 		};
 	}
 
+	int infinite_norm(const glm::ivec3 &v) {
+		return std::max(std::abs(v[0]), std::max(std::abs(v[1]), std::abs(v[2])));
+	}
+
+	int linear_norm(const glm::ivec3 v) {
+		return std::abs(v[0]) + std::abs(v[1]) + std::abs(v[2]);
+	}
+
 }

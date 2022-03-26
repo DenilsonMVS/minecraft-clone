@@ -6,6 +6,7 @@
 #include <map>
 #include <queue>
 
+#include "texture.hpp"
 #include "chunk.hpp"
 #include "index_buffer.hpp"
 #include "program.hpp"
@@ -23,7 +24,7 @@ public:
 
 	void gen_chunks();
 	void gen_chunks(const int quantity);
-	void draw(const glm::mat4 &mvp, const Renderer &renderer) const;
+	void draw(const glm::mat4 &mvp, const Renderer &renderer, const Texture &block_texture) const;
 	void update(const glm::dvec3 &player_position);
 
 	void modify_block(const glm::ivec3 &block_global_pos, const Block::Id block_id);
@@ -52,13 +53,44 @@ private:
 	std::vector<const Chunk *> chunks_to_draw_non_transparent;
 	std::vector<const Chunk *> chunks_to_draw_transparent;
 
-	Program program;
-	Uniform u_mvp;
-	Uniform u_offset;
 
-	Program transparent_program;
-	Uniform u_transparent_mvp;
-	Uniform u_transparent_offset;
+	struct MainProgram {
+		MainProgram();
+
+		Program program;
+
+		Uniform u_mvp;
+		Uniform u_offset;
+		Uniform u_texture;
+	} main_program;
+
+	struct TransparentProgram {
+		TransparentProgram();
+
+		Program program;
+		
+		Uniform u_mvp;
+		Uniform u_offset;
+		Uniform u_texture;
+		Uniform u_depth;
+		Uniform u_enable_depth_test;
+		Uniform u_window_dimensions;
+	} transparent_program;
+	
+	struct ScreenProgram {
+		ScreenProgram();
+
+		Program program;
+
+		Uniform u_color;
+		Uniform u_depth;
+
+		SuperBuffer buffer;
+	} screen_program;
+
+
+	static constexpr int iot_num_passes = 4;
+	Framebuffer framebuffers[iot_num_passes];
 };
 
 #endif

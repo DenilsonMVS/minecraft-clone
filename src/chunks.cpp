@@ -6,45 +6,83 @@
 #include "utils.hpp"
 
 
-static int infinite_norm(const glm::ivec3 &v) {
-	return std::max(std::abs(v[0]), std::max(std::abs(v[1]), std::abs(v[2])));
-}
+Chunks::MainProgram::MainProgram() {
+	const char *shader_source[] = {
+		"resources/shaders/main.vert",
+		"resources/shaders/main.frag"
+	};
 
-static int linear_norm(const glm::ivec3 v) {
-	return std::abs(v[0]) + std::abs(v[1]) + std::abs(v[2]);
+	new (&this->program) Program(shader_source);
+
+	this->u_mvp = this->program.get_uniform("u_mvp");
+	this->u_offset = this->program.get_uniform("u_offset");
+	this->u_texture = this->program.get_uniform("u_texture");
+
+	this->u_texture.set(0);
+};
+
+Chunks::TransparentProgram::TransparentProgram() {
+	const char *shader_source[] = {
+		"resources/shaders/transparent.vert",
+		"resources/shaders/transparent.frag"
+	};
+
+	new (&this->program) Program(shader_source);
+
+	this->u_mvp = this->program.get_uniform("u_mvp");
+	this->u_offset = this->program.get_uniform("u_offset");
+	this->u_texture = this->program.get_uniform("u_texture");
+	this->u_depth = this->program.get_uniform("u_depth");
+	this->u_enable_depth_test = this->program.get_uniform("u_enable_depth_test");
+	this->u_window_dimensions = this->program.get_uniform("u_window_dimensions");
+
+	this->u_texture.set(0);
+	this->u_depth.set(1);
+	this->u_window_dimensions.set(glm::ivec2 {800, 600});
+};
+
+Chunks::ScreenProgram::ScreenProgram() {
+	const char *shader_source[] = {
+		"resources/shaders/screen.vert",
+		"resources/shaders/screen.frag"
+	};
+
+	new (&this->program) Program(shader_source);
+
+	this->u_color = this->program.get_uniform("u_color");
+	this->u_depth = this->program.get_uniform("u_depth");
+
+	this->u_color.set(0);
+	this->u_depth.set(1);
+
+
+	struct Vertex {
+		glm::vec2 position;
+		glm::vec2 texture_coord;
+	};
+
+	static const std::array<LayoutElement, 2> layout = {{
+		{2, gl::get_enum<float>(), false},
+		{2, gl::get_enum<float>(), false}
+	}};
+
+	static const std::array<Vertex, 4> vertices = {{
+        {{-1.0f, -1.0f}, {0.0f, 0.0f}},
+		{{-1.0f,  1.0f}, {0.0f, 1.0f}},
+        {{ 1.0f, -1.0f}, {1.0f, 0.0f}},
+        {{ 1.0f,  1.0f}, {1.0f, 1.0f}}
+	}};
+
+	new (&this->buffer) SuperBuffer(layout);
+	this->buffer.assign_data<Vertex>(vertices, gl::Usage::STATIC_DRAW);
 }
 
 Chunks::Chunks(const int radius, const glm::dvec3 &player_position) :
 	radius(radius),
 	center_chunk_position(get_chunk_pos_based_on_block_inside(det::to_int(player_position)))
 {
-	const auto shaders = {
-		Shader("resources/shaders/main.vert"),
-		Shader("resources/shaders/main.frag")
-	};
-
-	new (&this->program) Program(shaders);
-
-	const auto u_texture = this->program.get_uniform("u_texture");
-	u_texture.set(0);
-
-	this->u_mvp = this->program.get_uniform("u_mvp");
-	this->u_offset = this->program.get_uniform("u_offset");
-
-
-	const auto transparent_shaders = {
-		Shader("resources/shaders/transparent.vert"),
-		Shader("resources/shaders/transparent.frag")
-	};
-
-	new (&this->transparent_program) Program(transparent_shaders);
-
-	const auto u_transparent_texture = this->transparent_program.get_uniform("u_texture");	
-	u_transparent_texture.set(0);
-
-	this->u_transparent_mvp = this->transparent_program.get_uniform("u_mvp");
-	this->u_transparent_offset = this->transparent_program.get_uniform("u_offset");
-
+	for(int i = 0; i < iot_num_passes; i++)
+		new (&this->framebuffers[i]) Framebuffer({800, 600});
 
 	this->generate_chunk_generation_queue();
 }
@@ -86,30 +124,60 @@ void Chunks::gen_chunks(const int quantity) {
 	}
 }
 
-void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer) const {
+void Chunks::draw(const glm::mat4 &mvp, const Renderer &renderer, const Texture &block_texture) const {
+	renderer.enable(gl::Capability::DEPTH_TEST);
 	renderer.disable(gl::Capability::BLEND);
 
-	this->program.bind();
-	this->u_mvp.set(mvp);
+
+	block_texture.bind(0);
+	this->main_program.program.bind();
+	this->main_program.u_mvp.set(mvp);
 
 	for(const auto &chunk_ptr : this->chunks_to_draw_non_transparent) {
 		const glm::ivec3 relative_distance = chunk_ptr->position - this->center_chunk_position;
-		this->u_offset.set(glm::vec3(relative_distance * chunk_size));
+		this->main_program.u_offset.set(glm::vec3(relative_distance * chunk_size));
 		chunk_ptr->draw_non_transparent(renderer);
 	}
 
 
 	assert(this->transparent_chunk_mesh_is_sorted());
 
-	renderer.enable(gl::Capability::BLEND);
+	this->transparent_program.program.bind();
+	this->transparent_program.u_mvp.set(mvp);
 
-	this->transparent_program.bind();
-	this->u_transparent_mvp.set(mvp);
+	for(int i = 0; i < iot_num_passes; i++) {
+		this->framebuffers[i].bind();
+		renderer.clear(gl::BitField::COLOR_BUFFER | gl::BitField::DEPTH_BUFFER);
 
-	for(const auto &chunk_ptr : this->chunks_to_draw_transparent) {
-		const glm::ivec3 relative_distance = chunk_ptr->position - this->center_chunk_position;
-		this->u_transparent_offset.set(glm::vec3(relative_distance * chunk_size));
-		chunk_ptr->draw_transparent(renderer);
+		if(i == 0)
+			this->transparent_program.u_enable_depth_test.set(0);
+		else
+			this->transparent_program.u_enable_depth_test.set(1);
+		
+		if(i != 0)
+			this->framebuffers[i - 1].bind_depth_map(1);
+
+
+		if(i == iot_num_passes - 1)
+			renderer.enable(gl::Capability::BLEND);
+
+		for(const auto &chunk_ptr : this->chunks_to_draw_transparent) {
+			const glm::ivec3 relative_distance = chunk_ptr->position - this->center_chunk_position;
+			this->transparent_program.u_offset.set(glm::vec3(relative_distance * chunk_size));
+			chunk_ptr->draw_transparent(renderer);
+		}
+	}
+
+
+	Framebuffer::unbind();
+
+	this->screen_program.program.bind();
+	this->screen_program.buffer.bind();
+	
+	for(int i = iot_num_passes - 1; i >= 0; i--) {
+		framebuffers[i].bind_color_map(0);
+		framebuffers[i].bind_depth_map(1);
+		renderer.draw_quads(1);
 	}
 }
 
@@ -242,7 +310,7 @@ void Chunks::select_chunks_to_draw() {
 
 	for(const auto &[position, chunk] : this->chunks) {
 		const glm::ivec3 relative_distance = position - this->center_chunk_position;
-		if(infinite_norm(relative_distance) <= this->radius) {
+		if(det::infinite_norm(relative_distance) <= this->radius) {
 			if(chunk.can_draw_non_transparent_mesh())
 				this->chunks_to_draw_non_transparent.push_back(&chunk);
 			
@@ -256,8 +324,8 @@ void Chunks::select_chunks_to_draw() {
 		this->chunks_to_draw_transparent.end(),
 		[this](const Chunk *lhs, const Chunk *rhs) {
 			return
-				linear_norm(lhs->position - this->center_chunk_position) >
-				linear_norm(rhs->position - this->center_chunk_position);
+				det::linear_norm(lhs->position - this->center_chunk_position) >
+				det::linear_norm(rhs->position - this->center_chunk_position);
 		}
 	);
 }
@@ -269,8 +337,8 @@ bool Chunks::transparent_chunk_mesh_is_sorted() const {
 		this->chunks_to_draw_transparent.end(),
 		[this](const Chunk *lhs, const Chunk *rhs) {
 			return
-				linear_norm(lhs->position - this->center_chunk_position) >
-				linear_norm(rhs->position - this->center_chunk_position);
+				det::linear_norm(lhs->position - this->center_chunk_position) >
+				det::linear_norm(rhs->position - this->center_chunk_position);
 		}
 	);
 }
