@@ -34,7 +34,6 @@ int main() {
 
 	renderer.set_max_drawn_quads(Chunk::max_faces_in_chunk());
 	renderer.enable(gl::Capability::CULL_FACE);
-	renderer.enable(gl::Capability::DEPTH_TEST);
 	
 	renderer.set_blend_function(gl::BlendFunc::SRC_ALPHA, gl::BlendFunc::ONE_MINUS_SRC_ALPHA);
 
@@ -101,7 +100,7 @@ int main() {
 
 		const auto mvp = player.camera.get_view_projection(window.get_dimensions(), 90);
 
-		chunks.draw(mvp, renderer, atlas.texture);
+		chunks.draw(mvp, renderer, window, atlas.texture);
 
 		atlas.texture.bind(0);
 		if(ray_location && !is_solid_block(chunks, det::to_int(player.position)))

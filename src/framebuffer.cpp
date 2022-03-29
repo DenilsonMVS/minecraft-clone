@@ -2,7 +2,9 @@
 #include "framebuffer.hpp"
 
 
-Framebuffer::Framebuffer(const glm::ivec2 &dimensions) {
+Framebuffer::Framebuffer(const glm::ivec2 &dimensions) :
+	dimensions(dimensions)
+{
 	assert(dimensions.x >= 0);
 	assert(dimensions.y >= 0);
 	
@@ -12,7 +14,7 @@ Framebuffer::Framebuffer(const glm::ivec2 &dimensions) {
 	glGenTextures(2, &this->depth_map);
 
 	glBindTexture(GL_TEXTURE_2D, this->depth_map);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, dimensions.x, dimensions.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);		
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, dimensions.x, dimensions.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depth_map, 0);
@@ -53,6 +55,22 @@ Framebuffer &Framebuffer::operator=(Framebuffer &&other) {
 	}
 
 	return *this;
+}
+
+void Framebuffer::resize(const glm::ivec2 &dimensions) {
+	assert(dimensions.x >= 0);
+	assert(dimensions.y >= 0);
+
+	if(this->dimensions == dimensions)
+		return;
+
+	glBindTexture(GL_TEXTURE_2D, this->depth_map);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, dimensions.x, dimensions.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+	glBindTexture(GL_TEXTURE_2D, this->color_map);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dimensions.x, dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+	this->dimensions = dimensions;
 }
 
 Framebuffer::~Framebuffer() {

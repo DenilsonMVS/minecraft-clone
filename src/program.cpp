@@ -8,8 +8,10 @@
 #include <iostream>
 #endif
 
-#include "glm/glm.hpp"
-#include "glm/gtc/type_ptr.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "utils.hpp"
 
 
 Program::Program() :
@@ -78,5 +80,9 @@ void Program::bind() const {
 
 Uniform Program::get_uniform(const char * const name) const {
 	glUseProgram(this->id);
-	return Uniform(glGetUniformLocation(this->id, name));
+	const int location = glGetUniformLocation(this->id, name);
+	#ifndef NDEBUG
+	det::check(location != -1, (std::string("Unable to find:") + std::string(name)).c_str());
+	#endif
+	return Uniform(location);
 }

@@ -17,6 +17,8 @@ public:
 	Framebuffer(Framebuffer &&other);
 	Framebuffer &operator=(Framebuffer &&other);
 
+	void resize(const glm::ivec2 &dimensions);
+
 	~Framebuffer();
 
 
@@ -28,6 +30,7 @@ public:
 
 
 private:
+	glm::ivec2 dimensions;
 	unsigned fbo_id;
 	unsigned depth_map;
 	unsigned color_map;
